@@ -1,0 +1,114 @@
+import os
+import uuid
+import shutil
+
+from config import BOT_TOKEN, DOWNLOAD_DIR, ADMIN_IDS
+from db import init_db, create_job, get_job, get_latest_job_for_user
+from worker import start_worker, submit_job
+
+
+def send_message(user_id, text):
+print(f"\n[SEND MESSAGE to {user_id}]\n{text}\n")
+
+
+def send_file(user_id, file_path, caption=None):
+print(f"\n[SEND FILE to {user_id}]\nFile: {file_path}\nCaption: {caption or ''}\n")
+
+
+def download_file_from_user(fake_file_path, original_name):
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+job_id = str(uuid.uuid4())[:8]
+dst = os.path.join(DOWNLOAD_DIR, f"{job_id}_{original_name}")
+shutil.copy2(fake_file_path, dst)
+return job_id, dst
+
+
+def bot_send_result(user_id, job_id, output_path):
+send_message(user_id, f"کار شما آماده شد.\nشناسه: {job_id}")
+send_file(user_id, output_path, caption=f"نتیجه نهایی | job_id={job_id}")
+
+
+def handle_status(user_id, job_id):
+job = get_job(job_id)
+if not job:
+send_message(user_id, "این job_id پیدا نشد.")
+return
+
+if job["user_id"] != user_id and user_id not in ADMIN_IDS:
+send_message(user_id, "اجازه مشاهده این job را نداری.")
+return
+
+msg = (
+f"job_id: {job['job_id']}\n"
+f"وضعیت: {job['status']}\n"
+f"نام فایل: {job['file_name']}\n"
+f"خطا: {job['error'] or '-'}\n"
+f"خروجی: {job['output_path'] or '-'}"
+)
+send_message(user_id, msg)
+
+
+def handle_incoming_file(user_id, file_path, original_name):
+job_id, local_path = download_file_from_user(file_path, original_name)
+create_job(job_id, user_id, original_name, local_path)
+submit_job({
+"job_id": job_id,
+"user_id": user_id,
+"input_path": local_path
+})
+send_message(user_id, f"فایل دریافت شد و در صف قرار گرفت.\njob_id: {job_id}")
+
+
+def handle_text(user_id, text):
+text = text.strip()
+
+if text.startswith("/status"):
+parts = text.split(maxsplit=1)
+if len(parts) < 2:
+latest = get_latest_job_for_user(user_id)
+if not latest:
+send_message(user_id, "هنوز هیچ jobی نداری.")
+return
+handle_status(user_id, latest["job_id"])
+else:
+handle_status(user_id, parts[1].strip())
+
+elif text.startswith("/start"):
+send_message(user_id, "سلام! فایل بفرست تا پردازش شود. برای وضعیت هم از /status استفاده کن.")
+
+elif text.startswith("/help"):
+send_message(user_id, "/start\n/status <job_id>\nیا یک مسیر فایل محلی برای تست بده.")
+
+else:
+send_message(user_id, "دستور ناشناخته است. /start یا /status را بزن.")
+
+
+def main():
+init_db()
+start_worker(bot_send_result)
+
+print("Bot is running...")
+print("BOT_TOKEN:", BOT_TOKEN if BOT_TOKEN else "(not set)")
+
+while True:
+try:
+cmd = input("Enter command (/start, /status, /help, or file path): ").strip()
+if not cmd:
+continue
+
+if os.path.isfile(cmd):
+user_id = 1
+original_name = os.path.basename(cmd)
+handle_incoming_file(user_id, cmd, original_name)
+else:
+handle_text(1, cmd)
+
+except KeyboardInterrupt:
+print("\nExiting...")
+break
+except Exception as e:
+print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+main()

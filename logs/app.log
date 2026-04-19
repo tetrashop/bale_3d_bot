@@ -1,0 +1,135 @@
+2026-04-13 10:21:02,137 INFO: Starting integrated test...
+2026-04-13 10:21:05,144 INFO: Offline mode: executing offline 3D processing
+2026-04-13 10:21:05,145 INFO: 3D model generated at: ./models/3d_model.obj
+2026-04-13 10:21:05,323 INFO: Payment recorded with id: 1
+2026-04-13 10:21:05,489 INFO: Knowledge found: AI
+2026-04-13 10:21:05,490 INFO: Integrated test completed.
+2026-04-15 09:10:20,173 INFO: Starting integrated test...
+2026-04-15 09:10:20,174 WARNING: Model file test_model.obj not found. Trying offline generation test...
+2026-04-15 09:10:20,175 ERROR: Exception in test_engine_3d: 'Engine3D' object has no attribute 'generate_model_offline'
+2026-04-15 09:10:23,211 INFO: Payment recorded with id: 3
+2026-04-15 09:10:23,219 INFO: Payment status updated for id: 3
+2026-04-15 09:10:26,246 INFO: Knowledge found: AI
+2026-04-15 09:10:26,265 INFO: Database test success: [(1, 'test')]
+2026-04-15 09:10:26,273 INFO: Integrated test completed.
+2026-04-15 09:12:13,586 INFO: Starting integrated test...
+2026-04-15 09:12:13,587 WARNING: Model file test_model.obj not found. Trying offline generation test...
+2026-04-15 09:12:13,588 ERROR: Exception in test_engine_3d: 'Engine3D' object has no attribute 'generate_model_offline'
+2026-04-15 09:12:16,638 INFO: Payment recorded with id: 4
+2026-04-15 09:12:16,653 INFO: Payment status updated for id: 4
+2026-04-15 09:12:19,715 INFO: Knowledge found: AI
+2026-04-15 09:12:19,747 INFO: Database test success: [(1, 'test')]
+2026-04-15 09:12:19,766 INFO: Integrated test completed.
+2026-04-15 11:41:51,769 INFO: Starting integrated test...
+2026-04-15 11:42:05,882 INFO: Offline 3D model generation succeeded. Saved to test_model.obj
+2026-04-15 11:42:05,883 ERROR: Exception in test_engine_3d: 'Engine3D' object has no attribute 'load_model'
+2026-04-15 11:42:09,128 INFO: Payment recorded with id: 5
+2026-04-15 11:42:09,159 INFO: Payment status updated for id: 5
+2026-04-15 11:42:12,222 INFO: Knowledge found: AI
+2026-04-15 11:42:12,252 INFO: Database test success: [(1, 'test')]
+2026-04-15 11:42:12,271 INFO: Integrated test completed.
+2026-04-15 11:46:15,147 INFO: Starting integrated test
+2026-04-15 11:46:29,198 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 11:46:29,199 WARNING: Model loading failed
+2026-04-15 11:46:32,229 INFO: Payment recorded with id 6
+2026-04-15 11:46:32,238 INFO: Payment 6 status updated
+2026-04-15 11:46:35,267 INFO: Knowledge found: AI
+2026-04-15 11:46:35,290 INFO: Database test success: [(1, 'test')]
+2026-04-15 11:46:35,302 INFO: Integrated test completed
+2026-04-15 11:50:02,750 INFO: Starting integrated test
+2026-04-15 11:50:17,612 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 11:50:17,651 ERROR: Failed to generate 3D model from video
+2026-04-15 11:50:20,713 INFO: Payment recorded with id 7
+2026-04-15 11:50:20,721 INFO: Payment 7 status updated
+2026-04-15 11:50:23,775 INFO: Knowledge found: AI
+2026-04-15 11:50:23,809 INFO: Database test success: [(1, 'test')]
+2026-04-15 11:50:23,829 INFO: Integrated test completed
+2026-04-15 11:53:23,659 INFO: Starting integrated test
+2026-04-15 11:53:37,675 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 11:53:37,716 ERROR: Failed to generate 3D model from video
+2026-04-15 11:53:40,786 INFO: Payment recorded with id 8
+2026-04-15 11:53:40,833 INFO: Payment 8 status updated
+2026-04-15 11:53:43,936 INFO: Knowledge found: AI
+2026-04-15 11:53:44,018 INFO: Database test success: [(1, 'test')]
+2026-04-15 11:53:44,054 INFO: Integrated test completed
+2026-04-15 12:10:25,194 INFO: Starting integrated test
+2026-04-15 12:10:39,444 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 12:10:39,483 ERROR: Exception in test_engine_3d: 'Engine3D' object has no attribute 'process_video_to_3d'
+2026-04-15 12:10:42,559 INFO: Payment recorded with id 9
+2026-04-15 12:10:42,573 INFO: Payment status updated for id 9
+2026-04-15 12:10:45,672 INFO: Knowledge found: AI
+2026-04-15 12:10:45,734 INFO: Database test success: [(1, 'test')]
+2026-04-15 12:10:45,774 INFO: Integrated test completed
+2026-04-15 12:24:13,830 INFO: Starting integrated test
+2026-04-15 12:24:28,199 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 12:24:28,235 ERROR: Failed to generate 3D model from video
+2026-04-15 12:24:31,294 INFO: Payment recorded with id 10
+2026-04-15 12:24:31,315 INFO: Payment status updated for id 10
+2026-04-15 12:24:34,371 INFO: Knowledge found: AI
+2026-04-15 12:24:34,399 INFO: Database test success: [(1, 'test')]
+2026-04-15 12:24:34,420 INFO: Integrated test completed
+2026-04-15 12:28:36,467 INFO: شروع تست یکپارچه
+2026-04-15 12:28:50,567 INFO: مدل آفلاین با موفقیت ساخته شد: model_offline.obj
+2026-04-15 12:28:50,606 ERROR: خطا در تولید مدل 3D از ویدئو
+2026-04-15 12:28:53,676 INFO: پرداخت ثبت شد با شناسه: 11
+2026-04-15 12:28:53,692 INFO: وضعیت پرداخت 11 به کامل تغییر کرد
+2026-04-15 12:28:56,783 INFO: دانش یافت شد: AI
+2026-04-15 12:28:56,832 INFO: تست دیتابیس موفق: [(1, 'test')]
+2026-04-15 12:28:56,847 INFO: تست یکپارچه پایان یافت
+2026-04-15 12:32:02,854 INFO: Starting integrated test
+2026-04-15 12:32:16,760 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 12:32:16,797 ERROR: Failed to generate 3D model from video
+2026-04-15 12:32:19,888 INFO: Payment recorded with id 12
+2026-04-15 12:32:19,900 INFO: Payment 12 status updated
+2026-04-15 12:32:22,946 INFO: Knowledge found: AI
+2026-04-15 12:32:22,970 INFO: Database test success: [(1, 'test')]
+2026-04-15 12:32:22,985 INFO: Integrated test completed
+2026-04-15 12:35:40,621 INFO: Starting integrated test
+2026-04-15 12:35:54,660 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 12:35:54,699 ERROR: Failed to generate 3D model from video
+2026-04-15 12:35:57,770 INFO: Payment recorded with id 13
+2026-04-15 12:35:57,783 INFO: Payment 13 status updated
+2026-04-15 12:36:00,821 INFO: Knowledge found: AI
+2026-04-15 12:36:00,846 INFO: Database test success: [(1, 'test')]
+2026-04-15 12:36:00,855 INFO: Integrated test completed
+2026-04-15 13:10:02,470 INFO: Starting integrated test
+2026-04-15 13:12:53,752 INFO: Starting integrated test
+2026-04-15 13:13:09,719 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 13:13:09,776 WARNING: Video test skipped or file missing.
+2026-04-15 13:13:12,835 INFO: Payment recorded with id 14
+2026-04-15 13:13:12,841 INFO: Payment 14 status updated
+2026-04-15 13:13:15,872 INFO: Knowledge found: AI
+2026-04-15 13:13:15,892 INFO: Database test success: [(1, 'test')]
+2026-04-15 13:13:15,901 INFO: Integrated test completed
+2026-04-15 13:32:06,221 INFO: Starting tests...
+2026-04-15 13:32:06,225 WARNING: Test video videos/sample_video.mp4 not found.
+2026-04-15 13:32:06,367 ERROR: Offline model generation failed: module 'PIL.Image' has no attribute 'ANTIALIAS'
+2026-04-15 13:32:06,367 INFO: Tests completed.
+2026-04-15 13:41:38,036 INFO: Starting tests...
+2026-04-15 13:41:39,806 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 13:41:39,813 ERROR: Exception in test_engine_3d: 'Engine3D' object has no attribute 'process_video_to_3d'
+2026-04-15 13:41:39,813 INFO: Tests completed.
+2026-04-15 13:46:14,936 INFO: Starting tests...
+2026-04-15 13:46:16,680 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 13:46:16,686 WARNING: Video file missing or processing not implemented.
+2026-04-15 13:46:16,687 INFO: Tests completed.
+2026-04-15 13:49:27,690 INFO: Starting tests...
+2026-04-15 13:49:29,435 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 13:49:29,441 WARNING: Video file missing or processing not implemented.
+2026-04-15 13:49:29,442 INFO: Tests completed.
+2026-04-15 15:11:18,715 INFO: Starting tests...
+2026-04-15 15:11:20,501 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 15:11:20,507 INFO: 3D model data length: 27
+2026-04-15 15:11:20,508 INFO: Tests completed.
+2026-04-15 15:25:31,159 INFO: Starting tests...
+2026-04-15 15:25:32,904 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 15:25:32,911 INFO: 3D model data length: 27
+2026-04-15 15:25:32,912 INFO: Tests completed.
+2026-04-15 15:28:51,074 INFO: Starting tests...
+2026-04-15 15:28:52,853 INFO: Offline 3D model generated at model_offline.obj
+2026-04-15 15:28:52,860 INFO: 3D model data length: 27
+2026-04-15 15:28:52,861 INFO: Tests completed.
+2026-04-15 15:49:14,038 INFO: شروع تست‌ها
+2026-04-15 15:49:15,847 INFO: مدل آفلاین با موفقیت ساخته شد: model_offline.obj
+2026-04-15 15:49:15,855 INFO: طول داده مدل 3D: 27
+2026-04-15 15:49:15,856 INFO: تست‌ها پایان یافت

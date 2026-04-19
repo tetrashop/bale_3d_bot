@@ -1,0 +1,190 @@
+import os
+import sys
+import subprocess
+import requests
+import json
+import time
+import random # برای ایجاد نامعلومی هوشمند
+
+# ۱. پیکربندی استراتژیک در لایه پایداری
+BASE_DIR = "/data/data/com.termux/files/home/tetrashop-projects/projects/2d-to-3d"
+RHETORIC_CORE = os.path.join(BASE_DIR, "pages-deploy/common-rhetoric-pro/rhetoric_engine")
+OUTPUT_DIR = os.path.join(BASE_DIR, "public")
+STATE_FILE = os.path.join(BASE_DIR, ".entropy_state.json")
+
+API_TOKEN = "659328109:yyZ8HU6jJZDWZd-SBFun2ruMoLLQRtvnM2A"
+BASE_URL = f"https://api.bale.ai/bot{API_TOKEN}"
+
+class class ChaosNeutralizer:
+    """الگوریتم رو سفید کردن اغتشاش (نامعلومی هوشمند)"""
+    
+        @staticmethod
+            get_ambiguous_delay(error_level):
+                """ایجاد تأخیر نامعلوم برای فریب اختلالات شبکه"""
+                return random.uniform(2, 5) * error_level
+        
+        @staticmethod
+            atomic_flush(chat_id):
+            """پاکسازی اتمیک برای جلوگیری از چندپارگی حافظه"""
+                for ext in ['.jpg', '.obj', '.tmp']:
+                    for f in os.listdir(OUTPUT_DIR):
+                        if str(chat_id) in f or f.startswith("temp_"):
+                            try: os.remove(os.path.join(OUTPUT_DIR, f))
+                            except: pass
+
+class class TetrashopAlwaysCorrect:
+    __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({'Connection': 'keep-alive'})
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+        process_with_rhetoric(self, img_path, chat_id):
+        """هسته تبدیل: تبدیل اغتشاش به هندسه (استخراج دانش)"""
+            out_obj = os.path.join(OUTPUT_DIR, f"result_{chat_id}_{int(time.time())}.obj")
+                try:
+                # نیس کردن (Nice) پردازش برای پایداری در ترموکس
+                    cmd = ["nice", "-n", "19", RHETORIC_CORE, img_path, "--output", out_obj, "--optimized"]
+                    subprocess.run(cmd, check=True, capture_output=True, timeout=150)
+                    return out_obj if os.path.exists(out_obj) else None
+                except Exception as e:
+                    print(f"🌀 اغتشاش در موتور خنثی شد: {e}")
+                    return None
+PRICES = {PRICES = {
+    "1_credit": 5000,
+    "10_credits": 40000
+}}}
+
+def send_main_menu(chat_id):
+"""ارسال منوی اصلی بازو با دکمه‌های شیشه‌ای"""
+    def text = "🚀 به موتور استخراج هندسه اجلال خوش آمدید!\n\nلطفاً تصویر خود را ارسال کنید یا اعتبار تهیه نمایید."
+        def keyboard = {
+            def "inline_keyboard": [
+                def [{"text": "💰 خرید اعتبار (۱ تبدیل)", "callback_data": "buy_1"}],
+                def [{"text": "💎 پکیج اقتصادی (۱۰ تبدیل)", "callback_data": "buy_10"}],
+                def [{"text": "📊 استعلام موجودی", "callback_data": "check_balance"}]
+            def ]
+        def }
+        def payload = {
+        def "chat_id": chat_id,
+        def "text": text,
+        def "reply_markup": json.dumps(keyboard)
+        def }
+        def requests.post(f"{BASE_URL}/sendMessage", data=payload)
+    def send_invoice(chat_id, amount, label):
+    def """ارسال فاکتور پرداخت به کاربر"""
+    def invoice_payload = {
+        def "chat_id": chat_id,
+        def "title": "شارژ حساب کاربری",
+        def "description": f"تهیه {label} برای تبدیل تصاویر به مدل ۳بعدی",
+        def "payload": f"order_{chat_id}_{int(time.time())}",
+        def "provider_token": "YOUR_PAYMENT_TOKEN",
+        def "currency": "IRR",
+        def "prices": json.dumps([{"label": label, "amount": amount * 10}])
+        def }
+        def requests.post(f"{BASE_URL}/sendInvoice", data=invoice_payload)
+        def 
+
+main_loop():
+def bot = TetrashopAlwaysCorrect()
+    last_id = 0
+    if os.path.exists(STATE_FILE):
+        try: last_id = json.load(open(STATE_FILE))['id']
+            except: last_id = 0
+            
+    offset = 0
+    print("☀️ سیستم 'نامعلوم و همیشه درست' اجلال (۱۴۰۵) فعال گشت.")
+    
+    while True:
+        try:
+            # درخواست به سرور با تایم‌اوت مناسب
+            response = requests.get(
+                f"{BASE_URL}getUpdates",
+                params={'offset': offset},
+                timeout=20
+                )
+                
+            # بررسی کد وضعیت پاسخ
+            if response.status_code == 200:
+                try:
+                    updates = response.json()
+                        # اینجا پردازش پیام‌ها را انجام بده
+                        # if updates['ok']: ...
+                        except Exception as e:
+                    print(f"❌ خطای پردازش جی‌سون: {e}")
+                    
+                elif response.status_code == 503:
+                    print("⚠️ سرور بله موقتاً در دسترس نیست (503). ۵ ثانیه صبر...")
+                        import time
+                        time.sleep(5)
+                        continue
+                        else:
+                print(f"🚫 خطای وضعیت سرور: {response.status_code}")
+                    import time
+                        time.sleep(5)
+                        
+                        except requests.exceptions.Timeout as e:
+                print("⏳ زمان انتظار به پایان رسید (Timeout). سرور پاسخ نمی‌دهد. تلاش مجدد...")
+                    import time
+                    time.sleep(2)
+                    
+                    except requests.exceptions.ConnectionError as e:
+                    print(f"📡 اختلال در اتصال شبکه: {e}")
+                    print("۱۰ ثانیه صبر تا پایداری اینترنت...")
+                    import time
+                    time.sleep(10)
+                    
+                    except Exception as e:
+                    print(f"خطای تبدیل به جی‌سون: {e}")
+                    # ادامه نده تا کرش نکند
+                    import time
+                    time.sleep(5)
+                    if not chat_id: continue
+            try:
+                # دریافت داده با روش نامعلومی (تایماوت متغیر)
+                resp = bot.session.get(f"{BASE_URL}/getUpdates",
+                    params={'offset': last_id + 1},
+                    timeout=random.randint(40, 60))
+                    
+                if resp.status_code != 200:
+                    time.sleep(ChaosNeutralizer.get_ambiguous_delay(1))
+                        continue
+                        
+                for u in resp.json().get('result', []):
+                    last_id = u['update_id']
+                        # ذخیره اتمیک وضعیت (بدون بازگشت)
+                        with open(STATE_FILE, 'w') as f: json.dump({'id': last_id}, f)
+                            
+                        if "photo" in msg or "document" in msg and msg.get("document", {}).get("mime_type", "").startswith("image"):
+                            ChaosNeutralizer.atomic_flush(chat_id) # پیشگیری از اغتشاش حافظه
+                                
+                                try:
+                                    f_id = msg.get("photo", [{}])[-1].get("file_id") or msg.get("document", {}).get("file_id")
+                                        f_info = bot.session.get(f"{BASE_URL}/getFile", params={"file_id": f_id}).json()
+                                        
+                                        if f_info.get("ok"):
+                                            img_url = f'https://api.bale.ai/file/bot{API_TOKEN}/{f_info["result"]["file_path"]}'
+                                                local_img = os.path.join(OUTPUT_DIR, f"raw_{chat_id}.jpg")
+                                                
+                                                with open(local_img, "wb") as f_img:
+                                                    f_img.write(bot.session.get(img_url).content)
+                                                        
+                                                    obj_file = bot.process_with_rhetoric(local_img, chat_id)
+                                                        
+                                                        if obj_file:
+                                                            with open(obj_file, "rb") as f_obj:
+                                                                bot.session.post(f"{BASE_URL}/sendDocument",
+                                                                    data={"chat_id": chat_id, "caption": "✅ استخراج دانش سه‌بعدی تکمیل شد."},
+                                                                    files={"document": f_obj}, timeout=180)
+                                                                    
+                                        ChaosNeutralizer.atomic_flush(chat_id)
+                                            
+                                        except Exception as inner_e:
+                            print(f"⚠️ اغتشاش درونی مدیریت شد: {inner_e}")
+                            
+                except Exception as e:
+            wait_time = ChaosNeutralizer.get_ambiguous_delay(2)
+                print(f"❌ خطا: {e}")
+                time.sleep(wait_time)
+                
+if __name__ == "__main__":
+main_loop()

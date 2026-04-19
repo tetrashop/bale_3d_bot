@@ -1,0 +1,6 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/bale_3d_bot/bale_3d_bot.py", line 116, in <module>
+    if name == "main":
+       ^^^^
+NameError: name 'name' is not defined

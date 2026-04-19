@@ -1,0 +1,108 @@
+import os
+import io
+import json
+import time
+import logging
+import requests
+import socket
+import glob
+from typing import Optional
+from PIL import Image
+import numpy as np
+import subprocess
+
+# مسیرهای اصلی پروژه
+BASE_DIR = os.getenv("BASE_DIR", "/data/data/com.termux/files/home/bale_3d_bot")
+OUTPUT_DIR = os.path.join(BASE_DIR, "public")
+STATE_FILE = os.path.join(BASE_DIR, ".entropy_state.json")
+BALANCES_FILE = os.path.join(BASE_DIR, ".user_balances.json")
+OFFLINE_INPUT_DIR = os.path.join(BASE_DIR, "offline_inputs")
+
+# توکن‌ها و آدرس‌ها
+API_TOKEN = os.getenv("API_TOKEN", "659328109:mKvuT2vt9j_JqPxKkcG36dvlBgYNowQ8GWo")
+BASE_URL = f"https://api.bale.ai/bot{API_TOKEN}"
+PROVIDER_TOKEN = os.getenv("PROVIDER_TOKEN", "WALLET-as6NfAMYM6r5ZKUv")
+ENABLE_COUNTRY_LIMIT = bool(int(os.getenv("ENABLE_COUNTRY_LIMIT", "1")))
+
+# قیمت‌ها
+PRICES = {"1_credit": 5000, "10_credits": 40000}
+
+# تنظیمات لاگ
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
+logger = logging.getLogger("bale_bot")
+
+# اطمینان از ساخت دایرکتوری‌ها
+for directory in [OUTPUT_DIR, OFFLINE_INPUT_DIR]:
+    os.makedirs(directory, exist_ok=True)
+    logger.info(f"Directory ensured: {directory}")
+
+# مدیریت درآمد و اعتبار
+class RevenueManager:
+    def load_balances(self) -> dict:
+        if not os.path.exists(BALANCES_FILE):
+            return {}
+        try:
+            with open(BALANCES_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Load balances error: {e}")
+            return {}
+
+    def save_balances(self, balances: dict):
+        try:
+            with open(BALANCES_FILE, "w") as f:
+                json.dump(balances, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Save balances error: {e}")
+
+    def increase_balance(self, chat_id: int, credits: int):
+        balances = self.load_balances()
+        key = str(chat_id)
+        balances[key] = balances.get(key, 0) + credits
+        self.save_balances(balances)
+        logger.info(f"Balance increased for {chat_id}: +{credits}")
+
+    def decrease_balance(self, chat_id: int, credits: int) -> bool:
+        balances = self.load_balances()
+        key = str(chat_id)
+        if balances.get(key, 0) >= credits:
+            balances[key] -= credits
+            self.save_balances(balances)
+            logger.info(f"Balance decreased for {chat_id}: -{credits}")
+            return True
+        return False
+
+    def get_balance(self, chat_id: int) -> int:
+        balances = self.load_balances()
+        return balances.get(str(chat_id), 0)
+
+revenue_manager = RevenueManager()
+
+# تابع تست اتصال آنلاین با DNS
+def test_online_connection() -> bool:
+    try:
+        socket.gethostbyname("api.bale.ai")
+        return True
+    except:
+        return False
+
+# تابع عمومی ارسال درخواست با retry و مدیریت خطاها
+def api_request_with_retry(session, method, url, max_retry=5, **kwargs):
+    delay = 1
+    for attempt in range(max_retry):
+        if not test_online_connection():
+            logger.warning("DNS not resolved, retry after delay")
+            time.sleep(10)
+            continue
+        try:
+            resp = session.request(method, url, timeout=30, **kwargs)
+            if resp.status_code == 200:
+                return resp
+            logger.warning(f"Status code {resp.status_code} on attempt {attempt+1}")
+        except requests.RequestException as e:
+            logger.warning(f"Request error at attempt {attempt+1}: {e}")
+        time.sleep(delay)
+        delay *= 2
+    logger.error(f"Max retries reached for {url}")
+    return None
+
