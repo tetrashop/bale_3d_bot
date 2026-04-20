@@ -238,6 +238,52 @@ def process_offline_dir(bot: TetrashopAlwaysCorrect):
 def ask_offline_mode(bot, chat_id: int):
     bot.send_message_with_fallback(chat_id, "سرویس آنلاین در دسترس نیست. لطفا 'بله' یا 'خیر' تایپ کنید.")
 
+
+def download_file(session, file_id: str, local_path: str) -> bool:
+    try:
+        url = f"https://api.bale.ai/bot{API_TOKEN}/file/get"
+        params = {"file_id": file_id}
+        resp = session.get(url, params=params, timeout=60)
+        if resp.status_code == 200:
+            with open(local_path, "wb") as f:
+                f.write(resp.content)
+            logger.info(f"File downloaded: {local_path}")
+            return True
+        else:
+            logger.error(f"Failed to download file {file_id}: Status {resp.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"Exception in download_file: {e}")
+        return False
+
+def send_payment_button(chat_id: int, amount: int):
+    url = f"https://api.bale.ai/bot{API_TOKEN}/message/send"
+    button = {
+        "inline_keyboard": [[
+            {
+                "text": f"شارژ {amount} سکه",
+                "callback_data": f"pay_{amount}"
+            }
+        ]]
+    }
+    data = {
+        "receiver": str(chat_id),
+        "type": "text",
+        "content": {
+            "text": f"برای شارژ {amount} سکه لطفا کلیک کنید",
+            "keyboard": button
+        }
+    }
+    try:
+        resp = requests.post(url, json=data, timeout=15)
+        if resp.status_code == 200:
+            logger.info(f"Payment button sent to {chat_id}")
+        else:
+            logger.error(f"Failed to send payment button: {resp.status_code}")
+    except Exception as e:
+        logger.error(f"send_payment_button error: {e}")
+
+
 def main_loop():
     import time
     bot = TetrashopAlwaysCorrect()
@@ -287,6 +333,97 @@ def main_loop():
                 with open(STATE_FILE, "w") as f:
                     json.dump({"id": last_id}, f)
                 # ادامه پردازش پیام و callback ها طبق ساختار خودتان
+
+                message = update.get("message")
+                if not message:
+                    continue
+
+                chat = message.get("chat")
+                if not chat:
+                    continue
+
+                chat_id = chat.get("id")
+                text = message.get("text")
+                photo = message.get("photo")
+                video = message.get("video")
+    
+                try:
+                    if text:
+                        txt = text.strip()
+                        if txt == "سلام":
+                            bot.send_message_with_fallback(chat_id, "سلام! چطورید؟")
+                            continue
+
+                    balance = revenue_manager.get_balance(chat_id)
+                    cost_per_model = 1
+            
+                    if balance < cost_per_model:
+                        bot.send_message_with_fallback(chat_id, "موجودی شما کافی نیست. لطفا اقدام به شارژ نمایید.")
+                        continue
+            
+                    if txt == "ساخت مدل آفلاین":
+                        bot.send_message_with_fallback(chat_id, "لطفا تصویر خود را ارسال کنید تا مدل آفلاین ساخته شود.")
+                        continue
+
+                    if txt.startswith("مدل از ویدئو"):
+                        parts = txt.split(" ", 3)
+                        if len(parts) < 4:
+                             bot.send_message_with_fallback(chat_id, "لطفا مسیر ویدئو را وارد کنید: مدل از ویدئو <مسیر_ویدئو>")
+                             continue
+                        video_path = parts[3]
+                        model_data = engine_3d.process_video_to_3d(video_path)
+                        if model_data:
+                            file_path = os.path.join(OUTPUT_DIR, f"model_{chat_id}_{int(time.time())}.obj")
+                            with open(file_path, "wb") as f:
+                                f.write(model_data)
+                            revenue_manager.decrease_balance(chat_id, cost_per_model)
+                            bot.send_file_with_fallback(chat_id, file_path, caption="مدل سه‌بعدی ساخته شده از ویدئو")
+                        else:
+                            bot.send_message_with_fallback(chat_id, "خطا در ساخت مدل از ویدئو.")
+                            continue
+            
+                        bot.send_message_with_fallback(chat_id, f"پیام شما دریافت شد: {txt}")
+
+                    elif photo:
+                        file_info = photo[-1]
+                        file_id = file_info.get("file_id")
+                        local_img_path = os.path.join(OFFLINE_INPUT_DIR, f"image_{chat_id}_{int(time.time())}.jpg")
+                        if download_file(bot.session, file_id, local_img_path):
+                            success = bot.process_offline_and_send(local_img_path, chat_id)
+                            if success:
+                                revenue_manager.decrease_balance(chat_id, 1)
+                            else:
+                                bot.send_message_with_fallback(chat_id, "خطا در ساخت مدل آفلاین.")
+                        else:
+                            bot.send_message_with_fallback(chat_id, "خطا در دریافت تصویر.")
+        
+                    elif video:
+                        file_id = video.get("file_id")
+                        local_video_path = os.path.join(OFFLINE_INPUT_DIR, f"video_{chat_id}_{int(time.time())}.mp4")
+                        if download_file(bot.session, file_id, local_video_path):
+                            obj_file = bot.process_with_rhetoric(local_video_path, chat_id)
+                            if obj_file:
+                                revenue_manager.decrease_balance(chat_id, 1)
+                            else:
+                                bot.send_message_with_fallback(chat_id, "خطا در ساخت مدل از ویدئو.")
+                        else:
+                            bot.send_message_with_fallback(chat_id, "خطا در دریافت ویدئو.")
+    
+                    callback = update.get("callback_query")
+                    if callback:
+                        data = callback.get("data", "")
+                        from_user = callback.get("from", {})
+                        chat_id = from_user.get("id")
+
+                    if data.startswith("pay_"):
+                        amount = int(data.split("_")[1])
+                    # فرض: افزودن اعتبار به کاربر
+                    revenue_manager.increase_balance(chat_id, amount)
+                    bot.send_message_with_fallback(chat_id, f"موجودی شما {amount} واحد افزایش یافت.")
+
+                except Exception as e:
+                    logger.error(f"Error processing message from {chat_id}: {e}")
+                    bot.send_message_with_fallback(chat_id, "خطایی پیش آمد. لطفا دوباره تلاش کنید.")
 
 if __name__ == "__main__":
     main_loop()

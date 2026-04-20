@@ -1,12 +1,32 @@
 {
-  "name": "my-bale-bot",
+  "name": "bale_3d_bot",
   "version": "1.0.0",
-  "main": "api/webhook.js",
   "scripts": {
-    "start": "vercel dev"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2"
-  }
+    "next": "^13.5.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "description": "1. توکن بات بله خود را در متغیر محیطی BALE_API_TOKEN تنظیم کنید:",
+  "main": "package.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tetrashop/bale_3d_bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tetrashop/bale_3d_bot/issues"
+  },
+  "scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
+  },
+  "homepage": "https://github.com/tetrashop/bale_3d_bot#readme"
 }
