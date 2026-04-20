@@ -283,6 +283,83 @@ def send_payment_button(chat_id: int, amount: int):
     except Exception as e:
         logger.error(f"send_payment_button error: {e}")
 
+
+
+# ذخیره وضعیت کاربران (در عمل باید پایگاه داده باشد)
+user_state = {}
+
+
+def handle_update(update):
+    message = update.get("message")
+    if not message:
+        return
+
+    user_id = message["from"]["id"]
+    text = message.get("text", "")
+
+    if text == "/reset":
+        clear_user_data(user_id)
+        user_state[user_id] = "MAIN_MENU"
+        send_message(user_id, "ربات با موفقیت ریست شد.")
+        send_main_menu(user_id)
+        return
+
+    # مدیریت پیام‌ها بر اساس وضعیت
+    state = user_state.get(user_id, "MAIN_MENU")
+    if state == "MAIN_MENU":
+        # اینجا می‌توان منو را مدیریت کرد یا دستورات جدید اضافه نمود
+        send_message(user_id, f"پیام دریافتی: {text}")
+
+
+def clear_user_data(user_id):
+    # اینجا پاکسازی داده‌های کاربر مثل فایل/کش/دیتابیس باشه
+    # فعلاً به صورت نمونه فقط حذف وضعیت
+    if user_id in user_state:
+        del user_state[user_id]
+
+
+def send_message(user_id, text):
+    url = API_URL + "sendMessage"
+    data = {
+        "chat_id": user_id,
+        "text": text
+    }
+    requests.post(url, json=data)
+
+
+def send_main_menu(user_id):
+    keyboard = {
+        "type": "keyboard",
+        "buttons": [
+            [{"type": "text", "text": "گزینه ۱"}],
+            [{"type": "text", "text": "گزینه ۲"}],
+            [{"type": "text", "text": "راهنما"}]
+        ],
+        "resize": True,
+        "one_time_keyboard": False
+    }
+
+    url = API_URL + "sendMessage"
+    data = {
+        "chat_id": user_id,
+        "text": "منوی اصلی ربات:",
+        "keyboard": keyboard
+    }
+    requests.post(url, json=data)
+
+
+# نمونه دریافت وبهوک و پردازش (برای فریم‌ورک یا سرور خودت تغییر بده)
+def webhook_handler(request_json):
+    """
+    فرض شده JSON درخواست ورودی ورسل یا هر جای دیگه به این تابع داده می‌شود.
+    """
+    update = request_json
+    handle_update(update)
+    return "ok"
+
+
+
+
 def main_loop():
     import time
     bot = TetrashopAlwaysCorrect()
