@@ -12,3 +12,25 @@ def handler(request, response):
         print(f"Error: {e}")
 
     return response.send({"status": "ok"})
+
+def handle_update(update):
+    message = update.get("message")
+    if not message:
+        return
+    user_id = message["from"]["id"]
+    text = message.get("text", "")
+
+    if text == "/reset":
+        clear_user_data(user_id)
+        send_message(user_id, "ربات با موفقیت ریست شد.")
+        return
+    
+    # کدهای دیگر پردازش پیام
+
+def clear_user_data(user_id):
+    # پاک‌سازی داده‌ها مثل دیتابیس یا کش مرتبط با user_id
+    pass
+
+def send_message(user_id, text):
+    # ارسال پیام به کاربر از طریق API بله
+    pass

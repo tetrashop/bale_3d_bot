@@ -283,7 +283,6 @@ def send_payment_button(chat_id: int, amount: int):
     except Exception as e:
         logger.error(f"send_payment_button error: {e}")
 
-
 def main_loop():
     import time
     bot = TetrashopAlwaysCorrect()
