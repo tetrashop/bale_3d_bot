@@ -1,3 +1,4 @@
+# engine_3d.py
 import os
 import logging
 import numpy as np
@@ -82,32 +83,18 @@ class Engine3D:
     def process_video_to_3d(self, video_path: str):
         if not os.path.exists(video_path):
             logger.warning(f"Video file not found: {video_path}")
-            return None
-        try:
-            logger.info(f"Processing video {video_path} to 3D model")
-            # پیاده‌سازی واقعی پخش ویدیو و تبدیل به مدل سه‌بعدی اینجا انجام شود
-            # برای تست اینجا فایل دمی ایجاد شده برگردانده می‌شود
-            dummy_path = os.path.join(os.path.dirname(video_path), "dummy_model.obj")
-            with open(dummy_path, "w") as f:
-                f.write("# Dummy 3D model for test\n")
-            with open(dummy_path, "rb") as f:
-                return f.read()
-        except Exception as e:
-            logger.error(f"Error processing video: {e}")
-            return None
-    def process_video_to_3d(self, video_path):
-        if not os.path.exists(video_path):
-            logger.warning(f"Video file not found: {video_path}")
-            # برای تست حداقل فایل نمادین بساز
             dummy_obj = "dummy_model_from_video.obj"
             with open(dummy_obj, "w") as f:
                 f.write("# dummy 3d model from video")
             with open(dummy_obj, "rb") as f:
                 return f.read()
-        # اینجا پردازش واقعی ویدیو به مدل قرار می‌گیرد
-        # در غیر اینصورت تابع تست بدون خطا
-        dummy_obj = "dummy_model_from_video.obj"
-        with open(dummy_obj, "w") as f:
-            f.write("# dummy 3d model from video")
-        with open(dummy_obj, "rb") as f:
-            return f.read()
+        try:
+            # تولید نمونه مدل دمی (جایگزین پردازش واقعی)
+            dummy_obj = "dummy_model_from_video.obj"
+            with open(dummy_obj, "w") as f:
+                f.write("# dummy 3d model from video")
+            with open(dummy_obj, "rb") as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"Error processing video: {e}")
+            return None
