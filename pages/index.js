@@ -1,9 +1,9 @@
 // pages/index.js
-import { MiniAppBridge } from "../lib/react-bridge";
 import { useState } from "react";
 
 export default function Home() {
-  const { sendMessage } = useMiniAppBridge(); // برای ارسال پیام به بات یا بله
+  const sendMessage = async () => {}; // تابع خالی موقت
+
   const [image, setImage] = useState(null);
   const [converted, setConverted] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,6 @@ export default function Home() {
       setImage(event.target.result);
 
       try {
-        // ارسال تصویر به API تبدیل
         const res = await fetch("/api/convert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -32,8 +31,7 @@ export default function Home() {
         const data = await res.json();
         setConverted(data.convertedImage);
 
-        // در صورت نیاز می توانیم پیامی به بات بفرستیم
-       await sendMessage({ type: "text", text: "تصویر تبدیل شد." });
+        await sendMessage({ type: "text", text: "تصویر تبدیل شد." });
       } catch (err) {
         setError(err.message || "خطایی رخ داد");
       } finally {
@@ -44,30 +42,41 @@ export default function Home() {
   };
 
   return (
-    <MiniAppBridge>
-      <div style={{ textAlign: "center", padding: 20 }}>
-        <h1>تبدیل دو بعدی به سه بعدی</h1>
-        <p>لطفا تصویری را آپلود کنید تا تبدیل شود.</p>
+    <div style={{ textAlign: "center", padding: 20 }}>
+      <h1>تبدیل دو بعدی به سه بعدی</h1>
+      <p>لطفا تصویری را آپلود کنید تا تبدیل شود.</p>
 
-        <input type="file" accept="image/*" onChange={handleFileChange} disabled={loading} />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        disabled={loading}
+      />
 
-        {loading && <p>در حال پردازش تصویر...</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
+      {loading && <p>در حال پردازش تصویر...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        {image && (
-          <div style={{ marginTop: 20 }}>
-            <h3>تصویر اصلی:</h3>
-            <img src={image} alt="Original" style={{ maxWidth: "80vw", maxHeight: 300 }} />
-          </div>
-        )}
+      {image && (
+        <div style={{ marginTop: 20 }}>
+          <h3>تصویر اصلی:</h3>
+          <img
+            src={image}
+            alt="Original"
+            style={{ maxWidth: "80vw", maxHeight: 300 }}
+          />
+        </div>
+      )}
 
-        {converted && (
-          <div style={{ marginTop: 20 }}>
-            <h3>تصویر سه بعدی تبدیل شده:</h3>
-            <img src={converted} alt="3D Converted" style={{ maxWidth: "80vw", maxHeight: 300 }} />
-          </div>
-        )}
-      </div>
-    </MiniAppBridge>
+      {converted && (
+        <div style={{ marginTop: 20 }}>
+          <h3>تصویر سه بعدی تبدیل شده:</h3>
+          <img
+            src={converted}
+            alt="3D Converted"
+            style={{ maxWidth: "80vw", maxHeight: 300 }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
