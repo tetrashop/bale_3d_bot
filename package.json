@@ -28,10 +28,5 @@
   "build": "next build",
   "start": "next start"
   },
-{
-  "type": "mini_app",
-  "title": "تبدیل دو بعدی به سه بعدی",
-  "app_id": "2dto3d"
-},
   "homepage": "https://github.com/tetrashop/bale_3d_bot#readme"
 }
