@@ -1,6 +1,5 @@
 // pages/index.js
 import { MiniAppBridge } from "../lib/react-bridge";
-import { MiniAppBridge, useMiniAppBridge } from "@bale-mp/react-bridge";
 import { useState } from "react";
 
 export default function Home() {
