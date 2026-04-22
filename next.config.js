@@ -8,4 +8,5 @@ module.exports = {
     }
     return config;
   },
+  turbopack: {}, // فعال کردن و غیرفعال کردن هشدار
 };
