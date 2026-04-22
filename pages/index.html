@@ -1,0 +1,46 @@
+import { useState } from "react";
+import WireframePreview from "../components/WireframePreview";
+
+export default function Home() {
+  const [convertedModelPath, setConvertedModelPath] = useState(null);
+  const [conversionDone, setConversionDone] = useState(false);
+
+  // فرضا این تابع به API پایتون درخواست تبدیل ارسال می‌کند و مسیر مدل را می‌گیرد
+  const convertImageTo3D = async (imageFile) => {
+    // ارسال درخواست به سرور برای ساخت مدل
+    // فرض: API مسیر مدل OBJ را برمی‌گرداند
+    const response = await fetch("/api/convert", {
+      method: "POST",
+      body: imageFile,
+    });
+    const data = await response.json();
+    if (data.success) {
+      setConvertedModelPath(data.modelPath);
+      setConversionDone(true);
+    }
+  };
+
+  return (
+    <div>
+      <h2>تبدیل تصویر یا ویدیو به مدل 3D</h2>
+
+      {!conversionDone && (
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={(e) => convertImageTo3D(e.target.files[0])}
+        />
+      )}
+
+      {conversionDone && (
+        <>
+          <h3>تبدیل با موفقیت انجام شد</h3>
+          <WireframePreview modelPath={convertedModelPath} />
+          <button onClick={() => alert("پرداخت و دریافت مدل نهایی")}>
+            پرداخت و دریافت مدل نهایی
+          </button>
+        </>
+      )}
+    </div>
+  );
+}

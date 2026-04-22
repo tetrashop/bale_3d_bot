@@ -1,13 +1,15 @@
-const path = require('path');
-
-const nextConfig = {
-  webpack: (config) => {
-    config.watchOptions = {
-      ignored: ['**/node_modules', '/data/**', '/**'],
-    };
+module.exports = {
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ignored: [
+          '**/node_modules',
+          '/data/**',
+          '/data/data/**',
+          '/**'  // به شدت پوشه ریشه رو نادیده می‌گیره تا خطاها کمتر شود
+        ]
+      };
+    }
     return config;
   },
-  outputFileTracingRoot: path.join(__dirname),
 };
-
-module.exports = nextConfig;

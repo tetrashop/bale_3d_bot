@@ -1,11 +1,9 @@
-// pages/index.js
 import { useState } from "react";
+import ModelPreview from "../components/ModelPreview";
 
 export default function Home() {
-  const sendMessage = async () => {}; // تابع خالی موقت
-
   const [image, setImage] = useState(null);
-  const [converted, setConverted] = useState(null);
+  const [modelUrl, setModelUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -15,36 +13,36 @@ export default function Home() {
 
     setError(null);
     setLoading(true);
-    const reader = new FileReader();
+    setModelUrl(null);
+    setImage(URL.createObjectURL(file));
 
-    reader.onload = async (event) => {
-      setImage(event.target.result);
+    const formData = new FormData();
+    formData.append("modelFile", file);
 
-      try {
-        const res = await fetch("/api/convert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageBase64: event.target.result }),
-        });
-        if (!res.ok) throw new Error("خطا در تبدیل تصویر");
+    try {
+      const res = await fetch("/api/checkReady", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("خطا در آپلود مدل");
 
-        const data = await res.json();
-        setConverted(data.convertedImage);
-
-        await sendMessage({ type: "text", text: "تصویر تبدیل شد." });
-      } catch (err) {
-        setError(err.message || "خطایی رخ داد");
-      } finally {
-        setLoading(false);
+      const data = await res.json();
+      if (data.success) {
+        setModelUrl(data.modelUrl);
+      } else {
+        setError("آپلود موفق نبود");
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setError("خطا در اتصال به سرور");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{ textAlign: "center", padding: 20 }}>
       <h1>تبدیل دو بعدی به سه بعدی</h1>
-      <p>لطفا تصویری را آپلود کنید تا تبدیل شود.</p>
+      <p>لطفاً تصویری برای تبدیل انتخاب کنید:</p>
 
       <input
         type="file"
@@ -53,7 +51,7 @@ export default function Home() {
         disabled={loading}
       />
 
-      {loading && <p>در حال پردازش تصویر...</p>}
+      {loading && <p>در حال پردازش تصویر و ساخت مدل...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {image && (
@@ -67,14 +65,16 @@ export default function Home() {
         </div>
       )}
 
-      {converted && (
+      {modelUrl && (
         <div style={{ marginTop: 20 }}>
-          <h3>تصویر سه بعدی تبدیل شده:</h3>
-          <img
-            src={converted}
-            alt="3D Converted"
-            style={{ maxWidth: "80vw", maxHeight: 300 }}
-          />
+          <h3>پیش‌نمایش مدل سه‌بعدی:</h3>
+          <ModelPreview modelUrl={modelUrl} />
+          <button
+            style={{ marginTop: 20 }}
+            onClick={() => alert("اینجا پرداخت را مدیریت کن")}
+          >
+            پرداخت و دریافت مدل نهایی
+          </button>
         </div>
       )}
     </div>
