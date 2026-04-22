@@ -5,5 +5,6 @@
   "/api/webhook": "pages/api/webhook.js",
   "/": "pages/index.html",
   "/_document": "pages/_document.js",
+  "/api/convert": "pages/api/convert.js",
   "/404": "pages/404.html"
 }

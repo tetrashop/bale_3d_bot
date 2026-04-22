@@ -36,6 +36,12 @@
       "namedRegex": "^/api/balewebhook(?:/)?$"
     },
     {
+      "page": "/api/convert",
+      "regex": "^/api/convert(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/convert(?:/)?$"
+    },
+    {
       "page": "/api/webhook",
       "regex": "^/api/webhook(?:/)?$",
       "routeKeys": {},
