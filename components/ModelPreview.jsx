@@ -2,21 +2,20 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 
-export default function ModelPreview({ modelUrl }) {
+const ModelPreview = ({ modelUrl }) => {
   const containerRef = useRef();
 
   useEffect(() => {
     if (!modelUrl) return;
 
-    const width = 400;
-    const height = 300;
-
+    const width = 400, height = 300;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.z = 3;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
+
     containerRef.current.appendChild(renderer.domElement);
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -30,21 +29,14 @@ export default function ModelPreview({ modelUrl }) {
       modelUrl,
       (obj) => {
         obj.traverse((child) => {
-          if (child.isMesh) {
-            child.material = new THREE.MeshBasicMaterial({
-              color: 0x00ff00,
-              wireframe: true,
-            });
-          }
+          if (child.isMesh) child.material.wireframe = true;
         });
         object = obj;
         scene.add(object);
         animate();
       },
       undefined,
-      (error) => {
-        console.error("Error loading OBJ model:", error);
-      }
+      (err) => console.error(err)
     );
 
     function animate() {
@@ -61,10 +53,7 @@ export default function ModelPreview({ modelUrl }) {
     };
   }, [modelUrl]);
 
-  return (
-    <div
-      ref={containerRef}
-      style={{ width: 400, height: 300, border: "1px solid #ccc", marginTop: 10 }}
-    ></div>
-  );
-}
+  return <div ref={containerRef} />;
+};
+
+export default ModelPreview;

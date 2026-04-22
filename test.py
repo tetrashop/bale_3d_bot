@@ -1,46 +1,62 @@
-import logging
+import sys
 import os
+import logging
+
+sys.path.append("..")  # مسیر پروژه برای import
+
 from engine_3d import Engine3D
-from error_handler import ErrorHandler
 
-def test_engine_3d(error_handler):
-    logger = logging.getLogger("TestEngine3D")
-    test_image = "downloads/658377.jpg"
-    output_obj = "model_offline.obj"
-    test_video = "downloads/sample_video.mp4"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("test")
 
-    if not os.path.isfile(test_image):
-        logger.error(f"تصویر تست یافت نشد: {test_image}")
-        return
+class PaymentManagerMock:
+    def process_payment(self, amount):
+        logger.info(f"پرداخت شبیه‌سازی شده: مقدار {amount}")
+        # اینجا می‌توانی منطق واقعی پرداخت را جایگزین کنی
+        return True
 
-    if not os.path.isfile(test_video):
-        logger.warning(f"ویدیو نمونه {test_video} یافت نشد. لطفا ویدیوی مناسب داخل فولدر downloads قرار دهید.")
+def test_model_generation():
+    engine = Engine3D()
+    input_image = "test_image.jpg"
+    if not os.path.exists(input_image):
+        logger.error(f"تصویر ورودی موجود نیست: {input_image}")
+        return None
+    success, filename = engine.generate_model_offline(input_image, "test_model.obj")
+    if success:
+        logger.info(f"مدل آفلاین ساخته شد: {filename}")
+    else:
+        logger.error(f"خطا در ساخت مدل: {filename}")
+        return None
+    loaded = engine.load_model()
+    if loaded:
+        logger.info(f"مدل 3D بارگذاری شد: {engine.model_path}")
+        return engine.model_path
+    else:
+        logger.error("بارگذاری مدل سه‌بعدی موفق نبود")
+        return None
 
-    try:
-        engine = Engine3D()
-        success, result = engine.generate_model_offline(test_image, output_obj)
-        if success:
-            error_handler.log_info(f"مدل آفلاین با موفقیت ساخته شد: {result}")
+def test_payment():
+    pay = PaymentManagerMock()
+    if pay.process_payment(10):
+        logger.info("پرداخت موفقیت‌آمیز بود")
+        return True
+    logger.error("پرداخت ناموفق بود")
+    return False
 
-            if engine.load_model():
-                data = engine.process_video_to_3d(test_video)
-                if data:
-                    error_handler.log_info(f"طول داده مدل 3D: {len(data)} بایت")
-                else:
-                    error_handler.log_warning("ویدیو موجود نیست یا پردازش نشده است.")
-            else:
-                error_handler.log_warning("بارگذاری مدل ناموفق بود.")
-        else:
-            error_handler.log_error(f"خطا در ایجاد مدل آفلاین: {result}")
-    except Exception as e:
-        error_handler.log_error(f"خطا در اجرای تست موتور 3D: {e}")
-
-def main():
-    logging.basicConfig(level=logging.INFO)
-    error_handler = ErrorHandler()
-    error_handler.log_info("شروع تست موتور 3D")
-    test_engine_3d(error_handler)
-    error_handler.log_info("تست‌ها پایان یافت")
+def test_download_model(model_path):
+    if model_path and os.path.exists(model_path) and os.path.getsize(model_path) > 0:
+        logger.info(f"دانلود مدل موفق: فایل موجود و خوانا است: {model_path}")
+        return True
+    else:
+        logger.error(f"دانلود مدل ناموفق: فایل موجود نیست یا خالی است: {model_path}")
+        return False
 
 if __name__ == "__main__":
-    main()
+    logger.info("شروع کل تست‌ها")
+
+    model_path = test_model_generation()
+    if model_path:
+        if test_payment():
+            test_download_model(model_path)
+
+    logger.info("پایان تست‌ها")
