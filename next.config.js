@@ -1,12 +1,13 @@
-module.exports = {
-  webpack: (config, options) => {
-    if (options.dev) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-      };
-    }
+const path = require('path');
+
+const nextConfig = {
+  webpack: (config) => {
+    config.watchOptions = {
+      ignored: ['**/node_modules', '/data/**', '/**'],
+    };
     return config;
   },
-  turbopack: {}, // فعال کردن و غیرفعال کردن هشدار
+  outputFileTracingRoot: path.join(__dirname),
 };
+
+module.exports = nextConfig;
