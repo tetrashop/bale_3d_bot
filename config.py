@@ -1,9 +1,6 @@
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
-
-
 class Config:
     MODEL_3D_PATH = os.getenv("MODEL_3D_PATH", "./models")
     PAYMENT_DB = os.getenv("PAYMENT_DB", "./payment.db")

@@ -7,7 +7,7 @@ def test_engine_3d(error_handler):
     logger = logging.getLogger("TestEngine3D")
     test_image = "downloads/658377.jpg"
     output_obj = "model_offline.obj"
-    test_video = "downloads/sample_video.mp4"  # مسیر ویدیو اصلاح شده
+    test_video = "downloads/sample_video.mp4"
 
     if not os.path.isfile(test_image):
         logger.error(f"تصویر تست یافت نشد: {test_image}")
@@ -25,11 +25,11 @@ def test_engine_3d(error_handler):
             if engine.load_model():
                 data = engine.process_video_to_3d(test_video)
                 if data:
-                    error_handler.log_info(f"طول داده مدل 3D: {len(data)}")
+                    error_handler.log_info(f"طول داده مدل 3D: {len(data)} بایت")
                 else:
                     error_handler.log_warning("ویدیو موجود نیست یا پردازش نشده است.")
             else:
-                error_handler.log_warning("بارگذاری مدل نا موفق بود.")
+                error_handler.log_warning("بارگذاری مدل ناموفق بود.")
         else:
             error_handler.log_error(f"خطا در ایجاد مدل آفلاین: {result}")
     except Exception as e:
@@ -38,8 +38,7 @@ def test_engine_3d(error_handler):
 def main():
     logging.basicConfig(level=logging.INFO)
     error_handler = ErrorHandler()
-
-    error_handler.log_info("شروع تست‌ها")
+    error_handler.log_info("شروع تست موتور 3D")
     test_engine_3d(error_handler)
     error_handler.log_info("تست‌ها پایان یافت")
 
