@@ -1,93 +1,97 @@
+import numpy as np
 import os
 import time
-import logging
-import numpy as np
-from PIL import Image
 
-logger = logging.getLogger("Engine3D")
+def cubic_bezier(p0, p1, p2, p3, t):
+    return ((1 - t)**3)*p0 + 3*((1 - t)**2)*t*p1 + 3*(1 - t)*(t**2)*p2 + (t**3)*p3
+
+def generate_closed_curve(control_points, n_points=20):
+    curve_points = []
+    for i in range(n_points):
+        t = i/(n_points - 1)
+        pt = cubic_bezier(control_points[0], control_points[1], control_points[2], control_points[3], t)
+        curve_points.append(pt)
+    # اطمینان از بسته بودن منحنی
+    if not np.allclose(curve_points[0], curve_points[-1]):
+        curve_points.append(curve_points[0])
+    return np.array(curve_points)
+
+def make_faces_between_curves(curve1, curve2):
+    faces = []
+    n = len(curve1)
+    for i in range(n - 1):
+        v1 = i + 1
+        v2 = i + 2
+        v3 = i + 1 + n
+        v4 = i + 2 + n
+        faces.append((v1, v3, v2))
+        faces.append((v2, v3, v4))
+    return faces
+
+def aggregate_trapezoids(trapezoids):
+    p0s = np.array([tr[0][0] for tr in trapezoids], dtype=float)
+    p1s = np.array([tr[0][1] for tr in trapezoids], dtype=float)
+    p2s = np.array([tr[1][0] for tr in trapezoids], dtype=float)
+    p3s = np.array([tr[1][1] for tr in trapezoids], dtype=float)
+
+    agg_p0 = np.mean(p0s, axis=0)
+    agg_p1 = np.mean(p1s, axis=0)
+    agg_p2 = np.mean(p2s, axis=0)
+    agg_p3 = np.mean(p3s, axis=0)
+
+    return [[agg_p0, agg_p1], [agg_p2, agg_p3]]
 
 class Engine3D:
-    def __init__(self, model_path: str = None):
-        self.model_path = model_path
-        self.model = None
+    def __init__(self):
+        self.model_path = None
 
-    def load_model(self) -> bool:
-        if not self.model_path or not os.path.exists(self.model_path):
-            logger.error(f"3D model file not found: {self.model_path}")
-            return False
-        try:
-            with open(self.model_path, "rb") as f:
-                self.model = f.read()
-            logger.info(f"3D model loaded from {self.model_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to load 3D model: {e}")
-            return False
+    def generate_trapezoid_mesh(self, edge1_pts, edge2_pts, output_folder="public/models", base_name=None):
+        os.makedirs(output_folder, exist_ok=True)
+        if base_name is None:
+            base_name = f"trapezoid_{int(time.time())}"
 
-    def generate_model_offline(self, image_path: str, obj_filename=None):
-        if not os.path.exists(image_path):
-            return False, f"Input image file not found: {image_path}"
-        try:
-            output_dir = os.path.join("public", "models")
-            os.makedirs(output_dir, exist_ok=True)
-            if obj_filename is None:
-                obj_filename = f"model_offline_{int(time.time())}.obj"
-            obj_path = os.path.join(output_dir, obj_filename)
+        def control_points(p0, p3):
+            p0 = np.array(p0, dtype=float)
+            p3 = np.array(p3, dtype=float)
+            p1 = p0 + (p3 - p0) * 0.3 + np.array([0, 0, 0.1])
+            p2 = p0 + (p3 - p0) * 0.7 + np.array([0, 0, 0.1])
+            return np.array([p0, p1, p2, p3])
 
-            img = Image.open(image_path).convert("L")
-            image = np.array(img)
-            max_res = 300
-            if image.shape[0] > max_res or image.shape[1] > max_res:
-                img = img.resize((max_res, max_res), Image.Resampling.LANCZOS)
-                image = np.array(img)
-            h, w = image.shape
-            cx, cy = w / 2, h / 2
+        cp1 = control_points(edge1_pts[0], edge1_pts[1])
+        cp2 = control_points(edge2_pts[0], edge2_pts[1])
 
-            with open(obj_path, "w") as f:
-                f.write("# OBJ model generated offline\n")
-                f.write("o OfflineModel\n")
-                for y in range(h):
-                    for x in range(w):
-                        dx, dy = x - cx, y - cy
-                        theta = np.arctan2(dy, dx)
-                        r_xy_norm = np.sqrt(dx*dx + dy*dy) / max(cx, cy)
-                        phi = (np.pi / 2) * (r_xy_norm ** 1.5)
-                        intensity = image[y, x] / 255.0
-                        r = intensity * 1.0
-                        X = r * np.sin(phi) * np.cos(theta)
-                        Y = r * np.sin(phi) * np.sin(theta)
-                        Z = r * np.cos(phi)
-                        f.write(f"v {X:.6f} {Y:.6f} {Z:.6f}\n")
+        n_points = 30
+        curve1 = generate_closed_curve(cp1, n_points)
+        curve2 = generate_closed_curve(cp2, n_points)
 
-                def vertex_id(x_, y_):
-                    return y_ * w + x_ + 1
+        vertices = np.vstack((curve1, curve2))
+        faces = make_faces_between_curves(curve1, curve2)
 
-                for y in range(h - 1):
-                    for x in range(w - 1):
-                        v1 = vertex_id(x, y)
-                        v2 = vertex_id(x + 1, y)
-                        v3 = vertex_id(x, y + 1)
-                        v4 = vertex_id(x + 1, y + 1)
-                        f.write(f"f {v1} {v2} {v3}\n")
-                        f.write(f"f {v3} {v2} {v4}\n")
+        obj_path = os.path.join(output_folder, base_name + ".obj")
+        with open(obj_path, "w") as f:
+            f.write("# Trapezoid mesh with cubic Bezier edges\n")
+            f.write(f"o {base_name}\n")
+            for v in vertices:
+                f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
+            for face in faces:
+                f.write("f {} {} {}\n".format(*face))
+        self.model_path = obj_path
+        return True, obj_path
 
-            logger.info(f"Offline 3D model generated and saved to {obj_path}")
-            self.model_path = obj_path
-            return True, obj_filename
-        except Exception as e:
-            logger.error(f"Error generating offline model: {e}")
-            return False, str(e)
+    def generate_aggregated_model(self, trapezoids, output_folder="public/models"):
+        aggregated = aggregate_trapezoids(trapezoids)
+        return self.generate_trapezoid_mesh(aggregated[0], aggregated[1], output_folder=output_folder)
 
-    def process_video_to_3d(self, video_path: str):
-        output_dir = os.path.join("public", "models")
-        os.makedirs(output_dir, exist_ok=True)
-
-        dummy_obj = os.path.join(output_dir, f"dummy_video_{int(time.time())}.obj")
-        try:
-            with open(dummy_obj, "w") as f:
-                f.write("# dummy 3d model from video")
-            self.model_path = dummy_obj
-            return dummy_obj
-        except Exception as e:
-            logger.error(f"Error processing video: {e}")
-            return None
+if __name__ == "__main__":
+    engine = Engine3D()
+    trapezoids = [
+        [[np.array([0, 0, 0]), np.array([1, 0, 0])], [np.array([0, 1, 0]), np.array([1, 1, 0])]],
+        [[np.array([1, 0, 0]), np.array([2, 0, 0])], [np.array([1, 1, 0]), np.array([2, 1, 0])]],
+        [[np.array([0, 1, 0]), np.array([1, 1, 0])], [np.array([0, 2, 0]), np.array([1, 2, 0])]],
+        [[np.array([1, 1, 0]), np.array([2, 1, 0])], [np.array([1, 2, 0]), np.array([2, 2, 0])]],
+    ]
+    success, filepath = engine.generate_aggregated_model(trapezoids)
+    if success:
+        print(f"مدل تجمیع‌شده ذخیره شد در: {filepath}")
+    else:
+        print("خطا در ساخت مدل تجمیع‌شده")

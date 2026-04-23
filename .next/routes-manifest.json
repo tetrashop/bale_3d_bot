@@ -54,6 +54,12 @@
       "namedRegex": "^/api/convert(?:/)?$"
     },
     {
+      "page": "/api/latestReadyModel",
+      "regex": "^/api/latestReadyModel(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/latestReadyModel(?:/)?$"
+    },
+    {
       "page": "/api/uploadModel",
       "regex": "^/api/uploadModel(?:/)?$",
       "routeKeys": {},
@@ -64,6 +70,12 @@
       "regex": "^/api/webhook(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/webhook(?:/)?$"
+    },
+    {
+      "page": "/latestModelPreview",
+      "regex": "^/latestModelPreview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/latestModelPreview(?:/)?$"
     }
   ],
   "dataRoutes": [],
