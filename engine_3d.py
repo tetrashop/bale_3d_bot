@@ -1,5 +1,5 @@
-# engine_3d.py
 import os
+import time
 import logging
 import numpy as np
 from PIL import Image
@@ -24,10 +24,16 @@ class Engine3D:
             logger.error(f"Failed to load 3D model: {e}")
             return False
 
-    def generate_model_offline(self, image_path: str, obj_filename="model_offline.obj"):
+    def generate_model_offline(self, image_path: str, obj_filename=None):
         if not os.path.exists(image_path):
             return False, f"Input image file not found: {image_path}"
         try:
+            output_dir = os.path.join("public", "models")
+            os.makedirs(output_dir, exist_ok=True)
+            if obj_filename is None:
+                obj_filename = f"model_offline_{int(time.time())}.obj"
+            obj_path = os.path.join(output_dir, obj_filename)
+
             img = Image.open(image_path).convert("L")
             image = np.array(img)
             max_res = 300
@@ -37,7 +43,7 @@ class Engine3D:
             h, w = image.shape
             cx, cy = w / 2, h / 2
 
-            with open(obj_filename, "w") as f:
+            with open(obj_path, "w") as f:
                 f.write("# OBJ model generated offline\n")
                 f.write("o OfflineModel\n")
                 for y in range(h):
@@ -65,33 +71,23 @@ class Engine3D:
                         f.write(f"f {v1} {v2} {v3}\n")
                         f.write(f"f {v3} {v2} {v4}\n")
 
-            logger.info(f"Offline 3D model generated and saved to {obj_filename}")
-            self.model_path = obj_filename
+            logger.info(f"Offline 3D model generated and saved to {obj_path}")
+            self.model_path = obj_path
             return True, obj_filename
         except Exception as e:
             logger.error(f"Error generating offline model: {e}")
             return False, str(e)
 
     def process_video_to_3d(self, video_path: str):
-        if not os.path.exists(video_path):
-            logger.warning(f"Video file not found: {video_path}")
-            dummy_obj = "dummy_model_from_video.obj"
-            try:
-                with open(dummy_obj, "w") as f:
-                    f.write("# dummy 3d model from video")
-                with open(dummy_obj, "rb") as f:
-                    return f.read()
-            except Exception as e:
-                logger.error(f"Error processing video: {e}")
-                return None
+        output_dir = os.path.join("public", "models")
+        os.makedirs(output_dir, exist_ok=True)
 
+        dummy_obj = os.path.join(output_dir, f"dummy_video_{int(time.time())}.obj")
         try:
-            # تولید نمونه مدل دمی (جایگزین پردازش واقعی)
-            dummy_obj = "dummy_model_from_video.obj"
             with open(dummy_obj, "w") as f:
                 f.write("# dummy 3d model from video")
-            with open(dummy_obj, "rb") as f:
-                return f.read()
+            self.model_path = dummy_obj
+            return dummy_obj
         except Exception as e:
             logger.error(f"Error processing video: {e}")
             return None
