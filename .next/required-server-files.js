@@ -103,7 +103,7 @@ self.__SERVER_FILES_MANIFEST={
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/data/data/com.termux/files/home/bale_3d_bot",
+    "outputFileTracingRoot": "/data/data/com.termux/files/home",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -303,12 +303,12 @@ self.__SERVER_FILES_MANIFEST={
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
-      "root": "/data/data/com.termux/files/home/bale_3d_bot"
+      "root": "/data/data/com.termux/files/home"
     },
     "distDirRoot": ".next"
   },
   "appDir": "/data/data/com.termux/files/home/bale_3d_bot",
-  "relativeAppDir": "",
+  "relativeAppDir": "bale_3d_bot",
   "files": [
     ".next/routes-manifest.json",
     ".next/server/pages-manifest.json",

@@ -2,18 +2,17 @@ import { useState } from "react";
 import WireframePreview from "../components/WireframePreview";
 
 export default function Home() {
-  const [modelUrl, setModelUrl] = useState(null);
-  const [isPaid, setIsPaid] = useState(false);
+  const [modelUrl, setModelUrl] = useState("/models/3d_model.obj"); // پیش‌فرض مسیر مدل
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleUpload = async (e) => {
+  // آپلود فایل مدل سه‌بعدی (OBJ)
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setError(null);
     setLoading(true);
-    setIsPaid(false);
     setModelUrl(null);
 
     const formData = new FormData();
@@ -24,49 +23,32 @@ export default function Home() {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
 
-      if (data.success) setModelUrl(data.modelUrl);
-      else setError("خطا در آپلود مدل");
-    } catch {
-      setError("خطا در اتصال به سرور");
+      if (!res.ok) throw new Error("خطا در آپلود مدل");
+
+      const data = await res.json();
+      if (data.success) {
+        setModelUrl(data.modelUrl);
+      } else {
+        setError("آپلود مدل ناموفق بود");
+      }
+    } catch (err) {
+      setError(err.message || "خطا در اتصال به سرور");
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePayment = () => {
-    // شبیه‌سازی پرداخت موفق
-    alert("پرداخت با موفقیت انجام شد");
-    setIsPaid(true);
-  };
-
   return (
     <div style={{ textAlign: "center", padding: 20 }}>
       <h1>آپلود و پیش‌نمایش مدل سه‌بعدی</h1>
-      <input type="file" accept=".obj,.glb" onChange={handleUpload} disabled={loading} />
 
-      {loading && <p>در حال آپلود...</p>}
+      <input type="file" accept=".obj" onChange={handleFileChange} disabled={loading} />
+
+      {loading && <p>در حال آپلود مدل...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {modelUrl && !isPaid && (
-        <>
-          <h3>پیش‌نمایش مدل (سیمی):</h3>
-          <WireframePreview modelUrl={modelUrl} />
-          <button style={{ marginTop: 10 }} onClick={handlePayment}>
-            پرداخت و دریافت مدل نهایی
-          </button>
-        </>
-      )}
-
-      {isPaid && modelUrl && (
-        <div style={{ marginTop: 20 }}>
-          <h3>پرداخت انجام شد. می‌توانید فایل مدل را دانلود کنید:</h3>
-          <a href={modelUrl} download style={{ fontSize: 18, color: "blue" }}>
-            دانلود مدل سه‌بعدی
-          </a>
-        </div>
-      )}
+      {modelUrl && <WireframePreview modelUrl={modelUrl} />}
     </div>
   );
 }
