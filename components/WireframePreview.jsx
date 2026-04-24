@@ -2,14 +2,14 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 
-export default function WireframePreview() {
+export default function WireframePreview({ modelUrl }) {
   const containerRef = useRef();
-  const modelUrl = "/models/3d_model.obj";
-
   const width = 400;
   const height = 300;
 
   useEffect(() => {
+    if (!modelUrl) return;
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.z = 3;
@@ -53,12 +53,12 @@ export default function WireframePreview() {
         }
       }
     };
-  }, []);
+  }, [modelUrl]);
 
   return (
     <div
       ref={containerRef}
-      style={{ width: width, height: height, border: "1px solid #ccc", marginTop: 10 }}
+      style={{ width, height, border: "1px solid #ccc", marginTop: 10 }}
     />
   );
 }

@@ -4,12 +4,12 @@
   "/api/balewebhook": "pages/api/balewebhook.js",
   "/api/latestReadyModel": "pages/api/latestReadyModel.js",
   "/api/webhook": "pages/api/webhook.js",
-  "/": "pages/index.html",
-  "/latestModelPreview": "pages/latestModelPreview.html",
+  "/": "pages/index.js",
+  "/latestModelPreview": "pages/latestModelPreview.js",
   "/_document": "pages/_document.js",
   "/api/checkModel": "pages/api/checkModel.js",
   "/api/checkReady": "pages/api/checkReady.js",
   "/api/convert": "pages/api/convert.js",
-  "/api/uploadModel": "pages/api/uploadModel.js",
-  "/404": "pages/404.html"
+  "/api/uploadImage": "pages/api/uploadImage.js",
+  "/api/uploadModel": "pages/api/uploadModel.js"
 }
