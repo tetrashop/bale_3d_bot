@@ -1,1 +1,3 @@
-{"timestamp":"00:00:06.556","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:06.344","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:14.872","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload"}
+{"timestamp":"00:00:18.372","source":"Server","level":"LOG","message":"○ Compiling / ..."}
