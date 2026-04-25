@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import numpy as np
+from collections import Counter
 from PIL import Image
 
 class Engine3D:
@@ -73,30 +74,35 @@ class Engine3D:
         print(f"مدل سه‌بعدی در فایل {output_obj} ذخیره شد.")
         return True, output_obj
 
-    def cubic_bezier(self, p0, p1, p2, p3, t):
-        return ((1 - t) ** 3) * p0 + 3 * ((1 - t) ** 2) * t * p1 + 3 * (1 - t) * (t ** 2) * p2 + (t ** 3) * p3
-
-    def generate_closed_curve(self, control_points, num_points=20):
-        points = []
-        for i in range(num_points):
-            t = i / (num_points - 1)
-            points.append(self.cubic_bezier(control_points[0], control_points[1], control_points[2], control_points[3], t))
-        if not np.allclose(points[0], points[-1]):
-            points.append(points[0])
-        return np.array(points)
-
     def aggregate_trapezoids(self, trapezoids):
-        p0s = np.array([t[0][0] for t in trapezoids], dtype=float)
-        p1s = np.array([t[0][1] for t in trapezoids], dtype=float)
-        p2s = np.array([t[1][0] for t in trapezoids], dtype=float)
-        p3s = np.array([t[1][1] for t in trapezoids], dtype=float)
+        # شمارش تکرار هر رأس در همه ذوزنقه‌ها
+        points = []
+        for tr in trapezoids:
+            points.extend(tr[0])
+            points.extend(tr[1])
 
-        agg_p0 = np.mean(p0s, axis=0)
-        agg_p1 = np.mean(p1s, axis=0)
-        agg_p2 = np.mean(p2s, axis=0)
-        agg_p3 = np.mean(p3s, axis=0)
+        points_tuple = [tuple(p) for p in points]
+        counts = Counter(points_tuple)
 
-        return [[agg_p0, agg_p1], [agg_p2, agg_p3]]
+        # بررسی وضعیت راس‌ها با درجه‌های 2، 3 و 4
+        deg4 = [p for p, c in counts.items() if c == 4]
+        deg3 = [p for p, c in counts.items() if c == 3]
+        deg2 = [p for p, c in counts.items() if c == 2]
+
+        filtered_trapezoids = []
+        for tr in trapezoids:
+            tr_points = [tuple(tr[0][0]), tuple(tr[0][1]), tuple(tr[1][0]), tuple(tr[1][1])]
+            deg_counts = [counts[p] for p in tr_points]
+
+            # شرایط ترکیبی راس‌ها
+            if any(c == 4 for c in deg_counts):
+                filtered_trapezoids.append(tr)
+            elif all(c == 3 for c in deg_counts):
+                filtered_trapezoids.append(tr)
+            elif all(c == 2 for c in deg_counts):
+                filtered_trapezoids.append(tr)
+
+        return filtered_trapezoids
 
     def generate_trapezoid_mesh(self, edge1_pts, edge2_pts, base_name=None, output_dir="public/models"):
         os.makedirs(output_dir, exist_ok=True)
@@ -136,8 +142,12 @@ class Engine3D:
         return True, obj_path
 
     def generate_aggregated_model(self, trapezoids, output_dir="public/models"):
-        aggregated = self.aggregate_trapezoids(trapezoids)
-        return self.generate_trapezoid_mesh(aggregated[0], aggregated[1], output_dir=output_dir)
+        filtered_traps = self.aggregate_trapezoids(trapezoids)
+        if not filtered_traps:
+            print("ذوزنقه‌ای مطابق شرایط پیدا نشد.")
+            return False, None
+        # انتخاب اولین ذوزنقه فیلتر شده برای ساخت مدل
+        return self.generate_trapezoid_mesh(filtered_traps[0][0], filtered_traps[0][1], output_dir=output_dir)
 
 
 if __name__ == "__main__":
