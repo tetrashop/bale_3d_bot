@@ -1,7 +1,6 @@
 {
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
-  "/api/balewebhook": "pages/api/balewebhook.js",
   "/api/latestReadyModel": "pages/api/latestReadyModel.js",
   "/api/payment": "pages/api/payment.js",
   "/api/webhook": "pages/api/webhook.js",

@@ -1,4 +1,3 @@
-{"timestamp":"00:00:05.763","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:28.335","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload"}
-{"timestamp":"00:00:31.470","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:02:09.751","source":"Server","level":"WARN","message":"API resolved without sending a response for /api/uploadImage, this may result in stalled requests."}
+{"timestamp":"00:00:06.561","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:50.059","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:01:11.992","source":"Server","level":"WARN","message":"API resolved without sending a response for /api/uploadImage, this may result in stalled requests."}

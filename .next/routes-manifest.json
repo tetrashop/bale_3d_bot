@@ -30,12 +30,6 @@
       "namedRegex": "^/(?:/)?$"
     },
     {
-      "page": "/api/balewebhook",
-      "regex": "^/api/balewebhook(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/balewebhook(?:/)?$"
-    },
-    {
       "page": "/api/checkModel",
       "regex": "^/api/checkModel(?:/)?$",
       "routeKeys": {},
