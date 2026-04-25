@@ -1,0 +1,76 @@
+<!-- preview.html -->
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>پیش‌نمایش مدل سه‌بعدی</title>
+    <style> body { margin: 0; overflow: hidden; font-family: Tahoma; } </style>
+</head>
+<body>
+    <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: white; padding: 8px 12px; border-radius: 8px; z-index: 10;">
+        مدل سیمی (wireframe) – برای دانلود پس از پرداخت اقدام کنید
+    </div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2, 2, 3);
+        camera.lookAt(0, 0, 0);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // نور
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(1, 2, 1);
+        scene.add(dirLight);
+
+        // بارگذاری مدل OBJ از آدرس سرور
+        const objUrl = '/models/3d_object.obj';   // مسیر مدل ساخته‌شده
+        const loader = new OBJLoader();
+        loader.load(objUrl, (obj) => {
+            obj.traverse(child => {
+                if (child.isMesh) {
+                    child.material.wireframe = true;      // حالت سیمی
+                    child.material.color.setHex(0x88aaff);
+                }
+            });
+            scene.add(obj);
+        }, undefined, (error) => console.error(error));
+
+        // کنترلر ساده چرخش با ماوس (اختیاری)
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+        });
+        function animate() {
+            requestAnimationFrame(animate);
+            // چرخش خودکار ملایم
+            camera.position.x += (mouseX * 0.05 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 0.05 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
