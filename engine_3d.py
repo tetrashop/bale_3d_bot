@@ -7,28 +7,34 @@ class Engine3D:
     def __init__(self):
         self.model_path = None
 
+    def _median_filter(self, arr, kernel_size=3):
+        """فیلتر میانه برای حذف نویزهای ضربه‌ای (میله‌ای) - بدون scipy"""
+        pad = kernel_size // 2
+        arr_pad = np.pad(arr, pad, mode='edge')
+        result = np.zeros_like(arr)
+        for i in range(arr.shape[0]):
+            for j in range(arr.shape[1]):
+                window = arr_pad[i:i+kernel_size, j:j+kernel_size]
+                result[i, j] = np.median(window)
+        return result
+
     def _sobel_edges(self, img):
-        """محاسبه magnitude لبه‌ها با عملگر Sobel (پیاده‌سازی با numpy خالص)"""
+        """لبه‌یاب Sobel با numpy خالص"""
         h, w = img.shape
-        # ایجاد آرایه خروجی
-        mag = np.zeros_like(img)
-        # عملگرهای Sobel
         sobel_x = np.array([[-1, 0, 1],
                             [-2, 0, 2],
                             [-1, 0, 1]], dtype=np.float32)
         sobel_y = np.array([[-1, -2, -1],
                             [ 0,  0,  0],
                             [ 1,  2,  1]], dtype=np.float32)
-        # اعمال کانولوشن با استفاده از همبستگی (correlation)
-        # برای حاشیه‌ها، مقدار صفر در نظر می‌گیریم (padding zero)
         img_pad = np.pad(img, pad_width=1, mode='edge')
+        mag = np.zeros_like(img)
         for y in range(1, h+1):
             for x in range(1, w+1):
                 window = img_pad[y-1:y+2, x-1:x+2]
                 gx = np.sum(window * sobel_x)
                 gy = np.sum(window * sobel_y)
                 mag[y-1, x-1] = np.hypot(gx, gy)
-        # نرمال‌سازی
         max_val = mag.max()
         if max_val > 0:
             mag = mag / max_val
@@ -38,9 +44,10 @@ class Engine3D:
                     max_res=400, max_height=0.28,
                     edge_boost=0.4, edge_sigma=0.8,
                     gamma=1.2, invert=True,
-                    bg_threshold=0.85, bg_flat=True):
+                    bg_threshold=0.85, bg_flat=True,
+                    median_filter_size=3):
         """
-        تبدیل تصویر به مدل سه‌بعدی با بهبود شکل مگس (بدون نیاز به scipy)
+        تبدیل تصویر به مدل سه‌بعدی با فیلتر میانه برای حذف نویزهای میله‌ای
         """
         # 1. بارگذاری و لومینانس
         img = Image.open(image_path).convert('RGB')
@@ -49,10 +56,14 @@ class Engine3D:
         luminance = 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
         h, w = luminance.shape
 
-        # 2. محاسبه لبه‌ها (Sobel)
+        # 2. فیلتر میانه روی تصویر اصلی (کاهش نویز)
+        if median_filter_size > 1:
+            luminance = self._median_filter(luminance, kernel_size=median_filter_size)
+
+        # 3. لبه‌ها
         edges = self._sobel_edges(luminance)
 
-        # 3. اعمال گاما و معکوس (تیره = بلند)
+        # 4. گاما و معکوس
         if gamma != 1.0:
             lum_gamma = np.power(luminance, gamma)
         else:
@@ -62,19 +73,23 @@ class Engine3D:
         else:
             depth_base = lum_gamma
 
-        # 4. یکسان‌سازی پس‌زمینه (زمینه روشن تخت شود)
+        # 5. تخت کردن زمینه
         if bg_flat:
             depth_base[luminance > bg_threshold] = 0.0
 
-        # 5. ترکیب ارتفاع پایه با لبه‌ها (Sigmoid)
+        # 6. ترکیب با لبه‌ها
         edge_map = np.tanh(edges * edge_sigma) * edge_boost
         depth = depth_base + edge_map
         depth = np.clip(depth, 0, 1)
 
-        # 6. مقیاس به ارتفاع نهایی
+        # 7. فیلتر میانه روی نقشه ارتفاع (حذف نویزهای نهایی)
+        if median_filter_size > 1:
+            depth = self._median_filter(depth, kernel_size=median_filter_size)
+
+        # 8. مقیاس نهایی
         depth = depth * max_height
 
-        # 7. مختصات x,y در [0,1]
+        # 9. مختصات
         x_vals = np.linspace(0, 1, w, dtype=np.float32)
         y_vals = np.linspace(0, 1, h, dtype=np.float32)
         X, Y = np.meshgrid(x_vals, y_vals)
@@ -83,7 +98,7 @@ class Engine3D:
         vertices = np.stack([X, Y, Z], axis=-1).reshape(-1, 3)
         vertices_list = vertices.tolist()
 
-        # 8. مثلث‌بندی (کوتاه‌ترین قطر + تصحیح نرمال)
+        # 10. مثلث‌بندی
         def idx(x, y):
             return y * w + x
 
@@ -135,21 +150,20 @@ class Engine3D:
                 faces.append(correct(tri1))
                 faces.append(correct(tri2))
 
-        # 9. ذخیره OBJ
+        # 11. ذخیره
         os.makedirs(os.path.dirname(output_obj), exist_ok=True)
         with open(output_obj, "w", encoding="utf-8") as f:
-            f.write("# Enhanced 3D mosquito model (pure numpy, no scipy)\n")
-            f.write(f"# max_height={max_height}, edge_boost={edge_boost}, edge_sigma={edge_sigma}\n")
+            f.write("# Denoised 3D model (median filter)\n")
+            f.write(f"# max_height={max_height}, edge_boost={edge_boost}, median_filter={median_filter_size}\n")
             for v in vertices_list:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
             for face in faces:
                 f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
 
         self.model_path = output_obj
-        print(f"[OK] مدل بهبودیافته مگس با {len(vertices_list)} رأس و {len(faces)} وجه در {output_obj} ذخیره شد.")
+        print(f"[OK] مدل بدون نویز در {output_obj} ذخیره شد.")
         return True, output_obj
 
-    # سازگاری با نام‌های قبلی
     def image_to_height_map(self, *args, **kwargs):
         return self.image_to_3d(*args, **kwargs)
 
@@ -166,6 +180,7 @@ if __name__ == "__main__":
                            gamma=1.2,
                            invert=True,
                            bg_threshold=0.85,
-                           bg_flat=True)
+                           bg_flat=True,
+                           median_filter_size=3)
     else:
         print("استفاده: python engine_3d.py <image_path> [output.obj]")
