@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html dir="rtl">
+<html lang="fa">
 <head>
     <meta charset="UTF-8">
-    <title>پیش‌نمایش مدل سه‌بعدی - مگس</title>
+    <title>پیش‌نمایش سه‌بعدی مگس</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: Tahoma; background-color: #111122; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         #info {
             position: absolute;
             top: 20px;
@@ -13,32 +13,43 @@
             color: white;
             padding: 8px 15px;
             border-radius: 8px;
-            z-index: 10;
+            z-index: 100;
             pointer-events: none;
-            font-size: 14px;
             backdrop-filter: blur(5px);
+            font-size: 14px;
         }
-        #controls {
+        #controls-panel {
             position: absolute;
             bottom: 20px;
-            left: 20px;
+            right: 20px;
             background: rgba(0,0,0,0.6);
             color: white;
-            padding: 5px 10px;
+            padding: 10px;
             border-radius: 8px;
-            font-size: 12px;
-            z-index: 10;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
             font-family: monospace;
         }
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #45a049; }
     </style>
 </head>
 <body>
     <div id="info">
-        🧬 مدل سه‌بعدی مگس (حالت سیمی) – برای بزرگ‌نمایی از اسکرول ماوس استفاده کنید
+        🦟 مدل سه‌بعدی مگس – برای دیدن جزئیات، از ماوس برای چرخش و زوم استفاده کنید
     </div>
-    <div id="controls">
-        🖱️ کلیک و بکشید برای چرخش | اسکرول برای زوم
+    <div id="controls-panel">
+        <button id="toggleWireframe">حالت سیمی / جامد</button>
     </div>
+
     <script type="importmap">
         {
             "imports": {
@@ -47,85 +58,112 @@
             }
         }
     </script>
+
     <script type="module">
         import * as THREE from 'three';
-        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x111122);
-        
-        // دوربین با فاصله کمتر (زوم بیشتر)
+        scene.fog = new THREE.FogExp2(0x111122, 0.008);
+
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
-        camera.position.set(1.2, 1.2, 1.2);
+        camera.position.set(1.0, 0.8, 1.2);
         camera.lookAt(0, 0, 0);
-        
+
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // کنترلر Orbit (اجازه زوم و چرخش)
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableZoom = true;
         controls.zoomSpeed = 1.5;
         controls.enablePan = true;
         controls.panSpeed = 0.8;
-        controls.target.set(0, 0, 0);
+        controls.target.set(0, 0.05, 0);
 
-        // نورپردازی
+        // نورها
         const ambientLight = new THREE.AmbientLight(0x404060);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(1, 2, 1);
-        scene.add(dirLight);
-        const backLight = new THREE.DirectionalLight(0x88aaff, 0.5);
-        backLight.position.set(-1, 1, -1);
+        
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        mainLight.position.set(1, 2, 1);
+        scene.add(mainLight);
+        
+        const fillLight = new THREE.DirectionalLight(0x88aaff, 0.6);
+        fillLight.position.set(-1, 1, 0.5);
+        scene.add(fillLight);
+        
+        const backLight = new THREE.PointLight(0x4466cc, 0.5);
+        backLight.position.set(0, 0.5, -1);
         scene.add(backLight);
+        
+        const rimLight = new THREE.PointLight(0xffaa66, 0.4);
+        rimLight.position.set(1, 1, -1);
+        scene.add(rimLight);
 
-        // بارگذاری مدل OBJ از مسیر public/models/3d_object.obj
-        const objUrl = '/models/3d_object.obj';
+        // بارگذاری مدل
         const loader = new OBJLoader();
-        let model;
-        loader.load(objUrl, (obj) => {
-            model = obj;
+        let currentModel = null;
+        let wireframeMode = false;
+
+        loader.load('/models/3d_object.obj', (obj) => {
+            currentModel = obj;
             obj.traverse(child => {
                 if (child.isMesh) {
-                    child.material.wireframe = true;
-                    child.material.color.setHex(0x88aaff);
-                    child.material.emissive = 0x224466;
+                    child.material = new THREE.MeshStandardMaterial({
+                        color: 0xcdb38c,
+                        roughness: 0.5,
+                        metalness: 0.1,
+                        emissive: 0x221100,
+                        wireframe: false
+                    });
+                    child.castShadow = true;
+                    child.receiveShadow = false;
                 }
             });
             scene.add(obj);
             
-            // تنظیم خودکار مرکز و فاصله دوربین بر اساس bounding box
+            // تنظیم خودکار دوربین بر اساس bounding box
             const box = new THREE.Box3().setFromObject(obj);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const fov = camera.fov * (Math.PI / 180);
-            let cameraZ = Math.abs(maxDim / (2 * Math.tan(fov / 2)));
-            cameraZ *= 1.2; // کمی فاصله بیشتر
-            camera.position.set(cameraZ * 0.8, cameraZ * 0.8, cameraZ);
+            const fov = camera.fov * Math.PI / 180;
+            let dist = maxDim / (2 * Math.tan(fov / 2));
+            dist *= 1.2;
+            camera.position.set(dist * 0.8, dist * 0.6, dist);
             controls.target.copy(center);
             controls.update();
-        }, undefined, (error) => console.error('خطا در بارگذاری مدل:', error));
+        }, undefined, (error) => console.error('Error loading model:', error));
+
+        // دکمه تغییر حالت سیمی/جامد
+        document.getElementById('toggleWireframe').addEventListener('click', () => {
+            wireframeMode = !wireframeMode;
+            if (currentModel) {
+                currentModel.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.wireframe = wireframeMode;
+                    }
+                });
+            }
+        });
 
         function animate() {
             requestAnimationFrame(animate);
-            controls.update(); // به روزرسانی تعاملات
+            controls.update();
             renderer.render(scene, camera);
         }
         animate();
 
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-        
-        // نمایش پیام در کنسول
-        console.log('پیش‌نمایش مگس با قابلیت زوم فعال شد');
+        }
     </script>
 </body>
 </html>
