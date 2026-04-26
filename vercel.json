@@ -1,6 +1,11 @@
 {
   "version": 2,
+  "builds": [
+    { "src": "package.json", "use": "@vercel/next" },
+    { "src": "engine_3d.py", "use": "@vercel/python" }
+  ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1.js" }
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "src": "/python/(.*)", "dest": "/engine_3d.py" }
   ]
 }

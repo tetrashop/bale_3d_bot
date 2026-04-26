@@ -10,8 +10,8 @@
     "formidable": "^3.5.4",
     "next": "^16.2.4",
     "node-fetch": "^2.7.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "three": "^0.184.0",
     "three-stdlib": "^2.36.1"
   },

@@ -7,17 +7,19 @@ class Engine3D:
     def __init__(self):
         self.model_path = None
 
-    def _median_filter(self, arr, kernel=3):
-        """فیلتر میانه ساده برای حذف نویز نقطه‌ای"""
-        pad = kernel // 2
+    @staticmethod
+    def _median_filter(arr, kernel_size=3):
+        """فیلتر میانه برای حذف نویز نقطه‌ای (ذرات کثیفی)"""
+        pad = kernel_size // 2
         padded = np.pad(arr, pad, mode='edge')
         out = np.zeros_like(arr)
         for i in range(arr.shape[0]):
             for j in range(arr.shape[1]):
-                out[i, j] = np.median(padded[i:i+kernel, j:j+kernel])
+                out[i, j] = np.median(padded[i:i+kernel_size, j:j+kernel_size])
         return out
 
-    def _sobel_magnitude(self, img):
+    @staticmethod
+    def _sobel_magnitude(img):
         """محاسبه اندازه لبه با عملگر Sobel (خالص numpy)"""
         sobel_x = np.array([[-1, 0, 1],
                             [-2, 0, 2],
@@ -39,12 +41,11 @@ class Engine3D:
         return mag
 
     def image_to_3d(self, image_path, output_obj="public/models/3d_object.obj",
-                    max_res=500, max_height=0.28,
+                    max_res=300, max_height=0.28,
                     median_kernel=3, bg_threshold=0.85,
                     edge_boost=0.3, gamma=1.2):
         """
         تبدیل تصویر به مدل سه‌بعدی صفحه‌ای (Height Map) با کیفیت بالا.
-        
         پارامترها:
             image_path   : مسیر تصویر ورودی
             output_obj   : مسیر فایل OBJ خروجی
@@ -62,9 +63,9 @@ class Engine3D:
         luminance = 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
         h, w = luminance.shape
 
-        # 2. فیلتر میانه برای حذف نویز نقطه‌ای (مثل غبار)
+        # 2. فیلتر میانه برای حذف نویز نقطه‌ای
         if median_kernel > 1:
-            luminance = self._median_filter(luminance, kernel=median_kernel)
+            luminance = self._median_filter(luminance, kernel_size=median_kernel)
 
         # 3. حذف زمینه روشن (آستانه‌گذاری)
         luminance[luminance > bg_threshold] = 1.0
@@ -72,18 +73,18 @@ class Engine3D:
         # 4. اعمال گاما و معکوس (تیره = ارتفاع بیشتر)
         if gamma != 1.0:
             luminance = np.power(luminance, gamma)
-        depth = 1.0 - luminance          # نقاط تیره به ۱ نزدیک می‌شوند
+        depth = 1.0 - luminance
 
-        # 5. تقویت لبه‌ها (Sobel) برای برجسته‌سازی بال و پاها
+        # 5. تقویت لبه‌ها با Sobel
         if edge_boost > 0:
             edges = self._sobel_magnitude(luminance)
             depth = depth + edges * edge_boost
             depth = np.clip(depth, 0, 1)
 
-        # 6. مقیاس نهایی ارتفاع (کنترل حداکثر برجستگی)
+        # 6. مقیاس نهایی ارتفاع
         depth = depth * max_height
 
-        # 7. ساخت رئوس در صفحه (مختصات X, Y صاف و بدون انحنا)
+        # 7. ساخت رئوس در صفحه (مختصات 0 تا 1)
         x_vals = np.linspace(0, 1, w, dtype=np.float32)
         y_vals = np.linspace(0, 1, h, dtype=np.float32)
         X, Y = np.meshgrid(x_vals, y_vals)
@@ -91,7 +92,7 @@ class Engine3D:
         vertices = np.stack([X, Y, Z], axis=-1).reshape(-1, 3)
         vertices_list = vertices.tolist()
 
-        # 8. مثلث‌بندی شبکه منظم با انتخاب کوتاه‌ترین قطر
+        # 8. مثلث‌بندی شبکه منظم با انتخاب کوتاه‌ترین قطر و تصحیح نرمال
         def idx(x, y):
             return y * w + x
 

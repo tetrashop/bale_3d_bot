@@ -6,6 +6,7 @@
   "/api/webhook": "pages/api/webhook.js",
   "/": "pages/index.html",
   "/latestModelPreview": "pages/latestModelPreview.html",
+  "/payment": "pages/payment.html",
   "/_document": "pages/_document.js",
   "/api/checkModel": "pages/api/checkModel.js",
   "/api/checkReady": "pages/api/checkReady.js",

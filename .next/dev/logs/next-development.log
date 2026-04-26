@@ -1,4 +1,5 @@
-{"timestamp":"00:00:06.893","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:07.035","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload"}
-{"timestamp":"00:00:10.357","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:00:47.845","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 187500 vertices, 373252 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}
+{"timestamp":"00:00:06.801","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:06.961","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload"}
+{"timestamp":"00:00:10.092","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:52.621","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 187500 vertices, 373252 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}
+{"timestamp":"00:00:58.755","source":"Server","level":"LOG","message":"✅ Simulated payment for wallet: WALLET-TEST-1111111111111111"}

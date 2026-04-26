@@ -82,6 +82,12 @@
       "regex": "^/latestModelPreview(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/latestModelPreview(?:/)?$"
+    },
+    {
+      "page": "/payment",
+      "regex": "^/payment(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/payment(?:/)?$"
     }
   ],
   "dataRoutes": [],
