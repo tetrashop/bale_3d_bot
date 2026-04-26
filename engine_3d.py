@@ -1,12 +1,3 @@
-"""
-engine_3d.py
-هسته اصلی تبدیل تصویر دو بعدی به مدل سه‌بعدی OBJ با روش نقشه ارتفاع (Height Map)
-همراه با تضمین شرط Delaunay (هیچ رأس دیگری درون دایره محیطی مثلث نباشد).
-
-نویسنده: تیم توسعه
-نسخه: 3.0 (پایدار با اعتبارسنجی اختیاری)
-"""
-
 import os
 import sys
 import numpy as np
@@ -16,129 +7,165 @@ class Engine3D:
     def __init__(self):
         self.model_path = None
 
-    def image_to_height_map(self, image_path, output_obj="public/models/3d_object.obj",
-                            max_res=300, max_height=1.0, enforce_delaunay=False):
-        """
-        تبدیل تصویر به مدل OBJ با نقشه ارتفاع.
+    def _sobel_edges(self, img):
+        """محاسبه magnitude لبه‌ها با عملگر Sobel (پیاده‌سازی با numpy خالص)"""
+        h, w = img.shape
+        # ایجاد آرایه خروجی
+        mag = np.zeros_like(img)
+        # عملگرهای Sobel
+        sobel_x = np.array([[-1, 0, 1],
+                            [-2, 0, 2],
+                            [-1, 0, 1]], dtype=np.float32)
+        sobel_y = np.array([[-1, -2, -1],
+                            [ 0,  0,  0],
+                            [ 1,  2,  1]], dtype=np.float32)
+        # اعمال کانولوشن با استفاده از همبستگی (correlation)
+        # برای حاشیه‌ها، مقدار صفر در نظر می‌گیریم (padding zero)
+        img_pad = np.pad(img, pad_width=1, mode='edge')
+        for y in range(1, h+1):
+            for x in range(1, w+1):
+                window = img_pad[y-1:y+2, x-1:x+2]
+                gx = np.sum(window * sobel_x)
+                gy = np.sum(window * sobel_y)
+                mag[y-1, x-1] = np.hypot(gx, gy)
+        # نرمال‌سازی
+        max_val = mag.max()
+        if max_val > 0:
+            mag = mag / max_val
+        return mag
 
-        پارامترها:
-            image_path (str): مسیر تصویر ورودی (رنگی یا خاکستری)
-            output_obj (str): مسیر فایل OBJ خروجی
-            max_res (int): حداکثر ابعاد تصویر (کاهش حجم)
-            max_height (float): حداکثر ارتفاع (Z) برای شدت روشنایی 255
-            enforce_delaunay (bool): اگر True باشد، فقط مثلث‌هایی اضافه می‌شوند که هیچ رأس دیگری درون دایره محیطی نداشته باشند.
-                                     در شبکه منظم این شرط خودکار است، اما برای اطمینان بیشتر می‌توان فعال کرد (کاهش سرعت).
+    def image_to_3d(self, image_path, output_obj="public/models/3d_object.obj",
+                    max_res=400, max_height=0.28,
+                    edge_boost=0.4, edge_sigma=0.8,
+                    gamma=1.2, invert=True,
+                    bg_threshold=0.85, bg_flat=True):
         """
-        # 1. بارگذاری و灰度
-        img = Image.open(image_path).convert('L')
+        تبدیل تصویر به مدل سه‌بعدی با بهبود شکل مگس (بدون نیاز به scipy)
+        """
+        # 1. بارگذاری و لومینانس
+        img = Image.open(image_path).convert('RGB')
         img.thumbnail((max_res, max_res), Image.Resampling.LANCZOS)
-        image = np.array(img, dtype=np.float32) / 255.0
-        h, w = image.shape
+        rgb = np.array(img, dtype=np.float32) / 255.0
+        luminance = 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
+        h, w = luminance.shape
 
-        # 2. محاسبه مختصات رئوس (x, y نرمال‌شده، z = ارتفاع)
-        vertices = []
-        x_scale = 2.0 / (w - 1) if w > 1 else 1.0
-        y_scale = 2.0 / (h - 1) if h > 1 else 1.0
-        for y in range(h):
-            ny = -1.0 + y * y_scale   # معکوس کردن جهت Y
-            for x in range(w):
-                nx = -1.0 + x * x_scale
-                nz = image[y, x] * max_height
-                vertices.append((nx, ny, nz))
+        # 2. محاسبه لبه‌ها (Sobel)
+        edges = self._sobel_edges(luminance)
 
-        # 3. ایندکس‌دهی (OBJ از 1 شروع)
-        def vid(x, y):
-            return y * w + x + 1
+        # 3. اعمال گاما و معکوس (تیره = بلند)
+        if gamma != 1.0:
+            lum_gamma = np.power(luminance, gamma)
+        else:
+            lum_gamma = luminance
+        if invert:
+            depth_base = 1.0 - lum_gamma
+        else:
+            depth_base = lum_gamma
 
-        # 4. تابع بررسی شرط Delaunay (اختیاری)
-        def is_delaunay_triangle(a_idx, b_idx, c_idx, all_vertices, exclude_idxs):
-            """
-            بررسی می‌کند که هیچ رأس دیگری (غیر از سه رأس مثلث) درون دایره محیطی مثلث قرار نداشته باشد.
-            بازگشت: True اگر شرط برقرار باشد.
-            """
-            A = np.array(all_vertices[a_idx])
-            B = np.array(all_vertices[b_idx])
-            C = np.array(all_vertices[c_idx])
+        # 4. یکسان‌سازی پس‌زمینه (زمینه روشن تخت شود)
+        if bg_flat:
+            depth_base[luminance > bg_threshold] = 0.0
 
-            # محاسبه مرکز دایره محیطی (با استفاده از معادله خطوط عمود منصف)
-            # روش: حل دستگاه خطی برای (x,y) مرکز
-            D = 2 * (A[0] * (B[1] - C[1]) + B[0] * (C[1] - A[1]) + C[0] * (A[1] - B[1]))
-            if abs(D) < 1e-8:
-                return True  # هم‌خط، دایره محیطی تعریف نمی‌شود
-            Ux = ((A[0]**2 + A[1]**2) * (B[1] - C[1]) +
-                  (B[0]**2 + B[1]**2) * (C[1] - A[1]) +
-                  (C[0]**2 + C[1]**2) * (A[1] - B[1])) / D
-            Uy = ((A[0]**2 + A[1]**2) * (C[0] - B[0]) +
-                  (B[0]**2 + B[1]**2) * (A[0] - C[0]) +
-                  (C[0]**2 + C[1]**2) * (B[0] - A[0])) / D
-            center = np.array([Ux, Uy])
-            radius_sq = np.sum((A[:2] - center) ** 2)
+        # 5. ترکیب ارتفاع پایه با لبه‌ها (Sigmoid)
+        edge_map = np.tanh(edges * edge_sigma) * edge_boost
+        depth = depth_base + edge_map
+        depth = np.clip(depth, 0, 1)
 
-            # بررسی تمام رئوس دیگر
-            for i, v in enumerate(all_vertices):
-                if i in exclude_idxs:
-                    continue
-                dist_sq = np.sum((np.array(v[:2]) - center) ** 2)
-                if dist_sq < radius_sq - 1e-7:  # نقطه درون دایره (و نه روی لبه)
-                    return False
-            return True
+        # 6. مقیاس به ارتفاع نهایی
+        depth = depth * max_height
 
-        # 5. ساخت مثلث‌ها با اعمال شرط (در صورت فعال بودن)
+        # 7. مختصات x,y در [0,1]
+        x_vals = np.linspace(0, 1, w, dtype=np.float32)
+        y_vals = np.linspace(0, 1, h, dtype=np.float32)
+        X, Y = np.meshgrid(x_vals, y_vals)
+        Z = depth
+
+        vertices = np.stack([X, Y, Z], axis=-1).reshape(-1, 3)
+        vertices_list = vertices.tolist()
+
+        # 8. مثلث‌بندی (کوتاه‌ترین قطر + تصحیح نرمال)
+        def idx(x, y):
+            return y * w + x
+
         faces = []
-        for y in range(h - 1):
-            for x in range(w - 1):
-                v_tl = vid(x, y)
-                v_tr = vid(x+1, y)
-                v_bl = vid(x, y+1)
-                v_br = vid(x+1, y+1)
+        for y in range(h-1):
+            for x in range(w-1):
+                tl = idx(x, y)
+                tr = idx(x+1, y)
+                bl = idx(x, y+1)
+                br = idx(x+1, y+1)
 
-                # مثلث اول: (TL, BL, TR)
-                tri1 = (v_tl, v_bl, v_tr)
-                # مثلث دوم: (TR, BL, BR)
-                tri2 = (v_tr, v_bl, v_br)
+                a = np.array(vertices_list[tl])
+                b = np.array(vertices_list[tr])
+                c = np.array(vertices_list[bl])
+                d = np.array(vertices_list[br])
 
-                if enforce_delaunay:
-                    # ایندکس‌های 0-based برای بررسی
-                    idx_tl = (y * w + x)
-                    idx_bl = ((y+1) * w + x)
-                    idx_tr = (y * w + (x+1))
-                    idx_br = ((y+1) * w + (x+1))
-
-                    if is_delaunay_triangle(idx_tl, idx_bl, idx_tr, vertices, {idx_tl, idx_bl, idx_tr}):
-                        faces.append(tri1)
-                    if is_delaunay_triangle(idx_tr, idx_bl, idx_br, vertices, {idx_tr, idx_bl, idx_br}):
-                        faces.append(tri2)
+                diag1 = np.linalg.norm(a - d)
+                diag2 = np.linalg.norm(b - c)
+                if diag1 <= diag2:
+                    tri1 = (tl, bl, tr)
+                    tri2 = (tr, bl, br)
                 else:
-                    faces.append(tri1)
-                    faces.append(tri2)
+                    tri1 = (tl, tr, bl)
+                    tri2 = (tr, br, bl)
 
-        # 6. نوشتن فایل OBJ
+                def correct(tri):
+                    u0, v0 = x, y
+                    if tri[1] == tr or tri[1] == br:
+                        u1 = x+1
+                    else:
+                        u1 = x
+                    if tri[1] == tl or tri[1] == tr:
+                        v1 = y
+                    else:
+                        v1 = y+1
+                    if tri[2] == tr or tri[2] == br:
+                        u2 = x+1
+                    else:
+                        u2 = x
+                    if tri[2] == tl or tri[2] == tr:
+                        v2 = y
+                    else:
+                        v2 = y+1
+                    area_uv = (u1 - u0)*(v2 - v0) - (u2 - u0)*(v1 - v0)
+                    if area_uv < 0:
+                        return (tri[0], tri[2], tri[1])
+                    return tri
+
+                faces.append(correct(tri1))
+                faces.append(correct(tri2))
+
+        # 9. ذخیره OBJ
         os.makedirs(os.path.dirname(output_obj), exist_ok=True)
         with open(output_obj, "w", encoding="utf-8") as f:
-            f.write("# OBJ model - Height Map from 2D image\n")
-            f.write(f"# Image: {w}x{h}, max_height={max_height}\n")
-            f.write(f"# Delaunay validation: {enforce_delaunay}\n")
-            f.write("# Vertices:\n")
-            for v in vertices:
+            f.write("# Enhanced 3D mosquito model (pure numpy, no scipy)\n")
+            f.write(f"# max_height={max_height}, edge_boost={edge_boost}, edge_sigma={edge_sigma}\n")
+            for v in vertices_list:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
-            f.write("# Faces (triangles):\n")
             for face in faces:
-                f.write(f"f {face[0]} {face[1]} {face[2]}\n")
+                f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
 
         self.model_path = output_obj
-        print(f"[Engine3D] مدل با {len(vertices)} رأس و {len(faces)} وجه در {output_obj} ذخیره شد.")
+        print(f"[OK] مدل بهبودیافته مگس با {len(vertices_list)} رأس و {len(faces)} وجه در {output_obj} ذخیره شد.")
         return True, output_obj
 
-    # سازگاری با نام متد قبلی (برای عدم ایجاد مشکل در کدهای قدیمی)
-    def image_to_3d_spherical(self, image_path, output_obj="public/models/3d_object.obj", max_res=300):
-        return self.image_to_height_map(image_path, output_obj, max_res, max_height=1.0, enforce_delaunay=False)
+    # سازگاری با نام‌های قبلی
+    def image_to_height_map(self, *args, **kwargs):
+        return self.image_to_3d(*args, **kwargs)
+
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
-        input_img = sys.argv[1]
-        output_obj = sys.argv[2] if len(sys.argv) > 2 else "output.obj"
         engine = Engine3D()
-        success, msg = engine.image_to_height_map(input_img, output_obj, enforce_delaunay=False)
-        print(msg if success else f"خطا: {msg}")
+        engine.image_to_3d(sys.argv[1],
+                           sys.argv[2] if len(sys.argv) > 2 else "output.obj",
+                           max_res=400,
+                           max_height=0.28,
+                           edge_boost=0.4,
+                           edge_sigma=0.8,
+                           gamma=1.2,
+                           invert=True,
+                           bg_threshold=0.85,
+                           bg_flat=True)
     else:
-        print("استفاده: python engine_3d.py <image_path> [output_obj_path]")
+        print("استفاده: python engine_3d.py <image_path> [output.obj]")
