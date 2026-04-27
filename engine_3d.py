@@ -9,7 +9,7 @@ class Engine3D:
 
     @staticmethod
     def _median_filter(arr, kernel_size=3):
-        """فیلتر میانه برای حذف نویز نقطه‌ای (ذرات کثیفی)"""
+        """فیلتر میانه برای حذف نویز نقطه‌ای"""
         pad = kernel_size // 2
         padded = np.pad(arr, pad, mode='edge')
         out = np.zeros_like(arr)
@@ -20,11 +20,13 @@ class Engine3D:
 
     @staticmethod
     def _sobel_magnitude(img):
-        """محاسبه اندازه لبه با عملگر Sobel (خالص numpy)"""
+        """محاسبه اندازه لبه با عملگر Sobel (پیاده‌سازی دستی، بدون scipy)"""
         sobel_x = np.array([[-1, 0, 1],
                             [-2, 0, 2],
                             [-1, 0, 1]], dtype=np.float32)
-        sobel_y = sobel_x.T
+        sobel_y = np.array([[-1, -2, -1],
+                            [0, 0, 0],
+                            [1, 2, 1]], dtype=np.float32)
         pad = 1
         padded = np.pad(img, pad, mode='edge')
         h, w = img.shape
@@ -45,16 +47,7 @@ class Engine3D:
                     median_kernel=3, bg_threshold=0.85,
                     edge_boost=0.3, gamma=1.2):
         """
-        تبدیل تصویر به مدل سه‌بعدی صفحه‌ای (Height Map) با کیفیت بالا.
-        پارامترها:
-            image_path   : مسیر تصویر ورودی
-            output_obj   : مسیر فایل OBJ خروجی
-            max_res      : حداکثر ابعاد تصویر (کاهش سرعت)
-            max_height   : حداکثر ارتفاع (پیشنهادی 0.25 تا 0.35)
-            median_kernel: اندازه فیلتر میانه (3 یا 5)
-            bg_threshold : آستانه حذف زمینه (پیکسل‌های با روشنایی > این مقدار، ارتفاع صفر می‌گیرند)
-            edge_boost   : وزن تقویت لبه‌ها (0 تا 0.5)
-            gamma        : تصحیح گاما (1.0 = خطی، >1 = حساسیت کمتر به تفاوت روشنایی)
+        تبدیل تصویر به مدل سه‌بعدی صفحه‌ای (Height Map) – نسخه پایدار و بدون scipy
         """
         # 1. بارگذاری و تبدیل به luminance
         img = Image.open(image_path).convert('RGB')
@@ -63,11 +56,11 @@ class Engine3D:
         luminance = 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
         h, w = luminance.shape
 
-        # 2. فیلتر میانه برای حذف نویز نقطه‌ای
+        # 2. فیلتر میانه
         if median_kernel > 1:
             luminance = self._median_filter(luminance, kernel_size=median_kernel)
 
-        # 3. حذف زمینه روشن (آستانه‌گذاری)
+        # 3. حذف زمینه روشن
         luminance[luminance > bg_threshold] = 1.0
 
         # 4. اعمال گاما و معکوس (تیره = ارتفاع بیشتر)
@@ -84,7 +77,7 @@ class Engine3D:
         # 6. مقیاس نهایی ارتفاع
         depth = depth * max_height
 
-        # 7. ساخت رئوس در صفحه (مختصات 0 تا 1)
+        # 7. ساخت رئوس
         x_vals = np.linspace(0, 1, w, dtype=np.float32)
         y_vals = np.linspace(0, 1, h, dtype=np.float32)
         X, Y = np.meshgrid(x_vals, y_vals)
@@ -92,7 +85,7 @@ class Engine3D:
         vertices = np.stack([X, Y, Z], axis=-1).reshape(-1, 3)
         vertices_list = vertices.tolist()
 
-        # 8. مثلث‌بندی شبکه منظم با انتخاب کوتاه‌ترین قطر و تصحیح نرمال
+        # 8. مثلث‌بندی
         def idx(x, y):
             return y * w + x
 
@@ -118,7 +111,7 @@ class Engine3D:
                     tri1 = (tl, tr, bl)
                     tri2 = (tr, br, bl)
 
-                # تصحیح جهت نرمال (بیرونی بودن) با مساحت علامت‌دار در فضای UV
+                # تصحیح جهت نرمال
                 def correct(tri):
                     u0, v0 = x, y
                     u1 = x+1 if tri[1] in (tr, br) else x
@@ -134,8 +127,9 @@ class Engine3D:
         # 9. ذخیره فایل OBJ
         os.makedirs(os.path.dirname(output_obj), exist_ok=True)
         with open(output_obj, "w", encoding="utf-8") as f:
-            f.write("# 3D Mosquito Model - Flat Height Map\n")
-            f.write(f"# max_height={max_height}, edge_boost={edge_boost}, bg_threshold={bg_threshold}\n")
+            f.write("# 3D Model - No SciPy, Pure NumPy\n")
+            f.write(f"# max_height={max_height}, edge_boost={edge_boost}, max_res={max_res}\n")
+            f.write(f"# vertices={len(vertices_list)}, faces={len(faces)}\n")
             for v in vertices_list:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
             for face in faces:
@@ -152,7 +146,7 @@ if __name__ == "__main__":
         engine.image_to_3d(
             sys.argv[1],
             sys.argv[2] if len(sys.argv) > 2 else "output.obj",
-            max_res=500,
+            max_res=300,
             max_height=0.28,
             median_kernel=3,
             bg_threshold=0.85,

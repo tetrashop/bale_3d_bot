@@ -35,7 +35,7 @@ export default function Home() {
 
   const handlePayment = async () => {
     try {
-      const walletId = "WALLET-TEST-1111111111111111"; // شناسه ولت تست
+      const walletId = "WALLET-as6NfAMYM6r5ZKUv"; // شناسه ولت تست
       const message = "پرداخت مدل سه‌بعدی شما تایید شد.";
       const res = await fetch("/api/payment", {
         method: "POST",
