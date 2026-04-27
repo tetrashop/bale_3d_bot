@@ -1,33 +1,52 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>پیش‌نمایش سه‌بعدی - مدل مگس</title>
-    <style>body{margin:0;overflow:hidden;font-family:Tahoma;}#info{position:absolute;top:20px;left:20px;background:rgba(0,0,0,0.7);color:white;padding:8px 15px;border-radius:8px;z-index:100;}</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پیش‌نمایش مدل سه‌بعدی</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #info { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; padding: 8px 15px; border-radius: 8px; z-index: 100; font-size: 14px; backdrop-filter: blur(4px); }
+        #controls { position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.6); color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-family: monospace; z-index: 100; }
+    </style>
 </head>
 <body>
-    <div id="info">🦟 مدل سه‌بعدی مگس – کلیک و بکشید برای چرخش | اسکرول برای زوم</div>
+    <div id="info">🦟 مدل سه‌بعدی مگس - کلیک و بکشید برای چرخش | اسکرول برای زوم</div>
+    <div id="controls">🖱️ تعامل با ماوس</div>
+
     <script type="importmap">
-        {"imports":{"three":"https://unpkg.com/three@0.128.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.128.0/examples/jsm/"}}
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
     </script>
+
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a2a);
-        scene.fog = new THREE.FogExp2(0x0a0a2a, 0.008);
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 10);
+        scene.background = new THREE.Color(0x111122);
+        scene.fog = new THREE.FogExp2(0x111122, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
         camera.position.set(1.2, 0.9, 1.5);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
+
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableZoom = true;
         controls.zoomSpeed = 1.2;
         controls.enablePan = true;
         controls.target.set(0, 0, 0);
+
+        // نورپردازی
         const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
         scene.add(ambientLight);
         const mainLight = new THREE.DirectionalLight(0xffcc88, 1.2);
@@ -36,16 +55,17 @@
         const fillLight = new THREE.DirectionalLight(0x88aaff, 0.5);
         fillLight.position.set(-1, 1, 0.8);
         scene.add(fillLight);
-        const backLight = new THREE.PointLight(0x4466cc, 0.4);
-        backLight.position.set(0, 0.5, -1.2);
-        scene.add(backLight);
-        const rimLight = new THREE.PointLight(0xffaa66, 0.5);
-        rimLight.position.set(1, 0.8, -1);
-        scene.add(rimLight);
+
         const loader = new OBJLoader();
         loader.load('/models/3d_object.obj', (obj) => {
-            obj.traverse(child => { if (child.isMesh) child.material = new THREE.MeshStandardMaterial({ color: 0xbd8a5a, roughness: 0.4, metalness: 0.1, emissive: 0x331100 }); });
+            obj.traverse(child => {
+                if (child.isMesh) {
+                    child.material = new THREE.MeshStandardMaterial({ color: 0xbd8a5a, roughness: 0.4, metalness: 0.1, emissive: 0x331100 });
+                    child.material.wireframe = false;
+                }
+            });
             scene.add(obj);
+
             const box = new THREE.Box3().setFromObject(obj);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
@@ -56,10 +76,20 @@
             camera.position.set(dist * 0.8, dist * 0.6, dist);
             controls.target.copy(center);
             controls.update();
-        });
-        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        }, undefined, (error) => console.error('Error loading model:', error));
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
         animate();
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>

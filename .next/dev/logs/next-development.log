@@ -1,2 +1,4 @@
-{"timestamp":"00:00:05.843","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:34.315","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:06.625","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:13.412","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload"}
+{"timestamp":"00:00:16.660","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:48.978","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 120000 vertices, 238050 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}

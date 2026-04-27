@@ -1,157 +1,189 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+engine_3d.py - موتور تبدیل تصویر 2D به مدل سه‌بعدی OBJ
+نسخه نهایی با بالاترین بهره‌وری و کیفیت
+"""
+
 import os
 import sys
+import math
 import numpy as np
 from PIL import Image
 
 class Engine3D:
+    """موتور تبدیل تصویر 2D به مدل سه‌بعدی OBJ"""
+    
     def __init__(self):
         self.model_path = None
-
+        self.vertices = []
+        self.faces = []
+    
     @staticmethod
-    def _median_filter(arr, kernel_size=3):
+    def _get_luminance(rgb):
+        """محاسبه روشنایی (Luminance) از تصویر RGB"""
+        return 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
+    
+    @staticmethod
+    def _median_filter(arr, kernel=3):
         """فیلتر میانه برای حذف نویز نقطه‌ای"""
-        pad = kernel_size // 2
+        pad = kernel // 2
         padded = np.pad(arr, pad, mode='edge')
         out = np.zeros_like(arr)
         for i in range(arr.shape[0]):
             for j in range(arr.shape[1]):
-                out[i, j] = np.median(padded[i:i+kernel_size, j:j+kernel_size])
+                out[i, j] = np.median(padded[i:i+kernel, j:j+kernel])
         return out
-
+    
     @staticmethod
-    def _sobel_magnitude(img):
-        """محاسبه اندازه لبه با عملگر Sobel (پیاده‌سازی دستی، بدون scipy)"""
-        sobel_x = np.array([[-1, 0, 1],
-                            [-2, 0, 2],
-                            [-1, 0, 1]], dtype=np.float32)
-        sobel_y = np.array([[-1, -2, -1],
-                            [0, 0, 0],
-                            [1, 2, 1]], dtype=np.float32)
+    def _gaussian_blur(arr, sigma=0.8):
+        """فیلتر گوسین برای هموارسازی"""
+        size = int(2 * np.ceil(3 * sigma) + 1)
+        if size < 3:
+            size = 3
+        ax = np.linspace(-(size // 2), size // 2, size)
+        gauss = np.exp(-0.5 * (ax / sigma) ** 2)
+        gauss /= gauss.sum()
+        blurred = np.apply_along_axis(lambda m: np.convolve(m, gauss, mode='same'), axis=0, arr=arr)
+        blurred = np.apply_along_axis(lambda m: np.convolve(m, gauss, mode='same'), axis=1, arr=blurred)
+        return blurred
+    
+    @staticmethod
+    def _sobel_edges(img):
+        """لبه‌یاب Sobel برای استخراج لبه‌ها"""
+        sobel_x = np.array([[-1,0,1], [-2,0,2], [-1,0,1]], dtype=np.float32)
+        sobel_y = sobel_x.T
         pad = 1
         padded = np.pad(img, pad, mode='edge')
         h, w = img.shape
         mag = np.zeros_like(img)
-        for i in range(1, h+1):
-            for j in range(1, w+1):
-                window = padded[i-1:i+2, j-1:j+2]
+        for y in range(1, h+1):
+            for x in range(1, w+1):
+                window = padded[y-1:y+2, x-1:x+2]
                 gx = np.sum(window * sobel_x)
                 gy = np.sum(window * sobel_y)
-                mag[i-1, j-1] = np.hypot(gx, gy)
+                mag[y-1, x-1] = np.hypot(gx, gy)
         max_val = mag.max()
-        if max_val > 0:
-            mag /= max_val
-        return mag
-
-    def image_to_3d(self, image_path, output_obj="public/models/3d_object.obj",
-                    max_res=300, max_height=0.28,
-                    median_kernel=3, bg_threshold=0.85,
-                    edge_boost=0.3, gamma=1.2):
+        return mag / max_val if max_val > 0 else mag
+    
+    def process(self, image_path, output_path="public/models/3d_object.obj", 
+                max_res=400, quality="high", edge_boost=0.3, smooth_sigma=0.6):
         """
-        تبدیل تصویر به مدل سه‌بعدی صفحه‌ای (Height Map) – نسخه پایدار و بدون scipy
+        پردازش اصلی تبدیل تصویر به مدل سه‌بعدی
+        
+        پارامترها:
+            image_path: مسیر تصویر ورودی
+            output_path: مسیر خروجی OBJ
+            max_res: حداکثر ابعاد تصویر
+            quality: "low", "medium", "high"
+            edge_boost: میزان تقویت لبه‌ها (0 تا 0.5)
+            smooth_sigma: میزان هموارسازی (0.3 تا 1.0)
         """
-        # 1. بارگذاری و تبدیل به luminance
+        # تنظیمات کیفیت
+        quality_settings = {
+            'low': {'max_res': 200, 'threshold': 0.85, 'max_height': 0.25},
+            'medium': {'max_res': 300, 'threshold': 0.85, 'max_height': 0.28},
+            'high': {'max_res': 400, 'threshold': 0.85, 'max_height': 0.30}
+        }
+        settings = quality_settings.get(quality, quality_settings['high'])
+        if max_res < settings['max_res']:
+            settings['max_res'] = max_res
+        
+        # 1. بارگذاری تصویر
         img = Image.open(image_path).convert('RGB')
-        img.thumbnail((max_res, max_res), Image.Resampling.LANCZOS)
+        img.thumbnail((settings['max_res'], settings['max_res']), Image.Resampling.LANCZOS)
+        width, height = img.size
         rgb = np.array(img, dtype=np.float32) / 255.0
-        luminance = 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
-        h, w = luminance.shape
-
-        # 2. فیلتر میانه
-        if median_kernel > 1:
-            luminance = self._median_filter(luminance, kernel_size=median_kernel)
-
-        # 3. حذف زمینه روشن
-        luminance[luminance > bg_threshold] = 1.0
-
-        # 4. اعمال گاما و معکوس (تیره = ارتفاع بیشتر)
-        if gamma != 1.0:
-            luminance = np.power(luminance, gamma)
-        depth = 1.0 - luminance
-
-        # 5. تقویت لبه‌ها با Sobel
+        
+        # 2. محاسبه روشنایی و پیش‌پردازش
+        luminance = self._get_luminance(rgb)
+        luminance = self._median_filter(luminance, kernel=3)
+        luminance[luminance > settings['threshold']] = 1.0
+        
+        # 3. اعمال گاما و معکوس
+        gamma = 1.2
+        luminance = np.power(luminance, gamma)
+        depth = 1.0 - luminance  # تیره = بلند
+        
+        # 4. تقویت لبه (اختیاری)
         if edge_boost > 0:
-            edges = self._sobel_magnitude(luminance)
+            edges = self._sobel_edges(luminance)
             depth = depth + edges * edge_boost
             depth = np.clip(depth, 0, 1)
-
-        # 6. مقیاس نهایی ارتفاع
-        depth = depth * max_height
-
-        # 7. ساخت رئوس
-        x_vals = np.linspace(0, 1, w, dtype=np.float32)
-        y_vals = np.linspace(0, 1, h, dtype=np.float32)
-        X, Y = np.meshgrid(x_vals, y_vals)
-        Z = depth
-        vertices = np.stack([X, Y, Z], axis=-1).reshape(-1, 3)
-        vertices_list = vertices.tolist()
-
-        # 8. مثلث‌بندی
+        
+        # 5. هموارسازی
+        if smooth_sigma > 0:
+            depth = self._gaussian_blur(depth, sigma=smooth_sigma)
+        
+        # 6. مقیاس ارتفاع نهایی
+        depth = depth * settings['max_height']
+        
+        # 7. ساخت رئوس (مختصات کروی ساده شده)
+        vertices = []
+        for y in range(height):
+            for x in range(width):
+                r = depth[y, x]
+                angle = (y / height) * math.pi
+                
+                X = (x / width) * 2 - 1
+                Y = (y / height) * 2 - 1
+                Z = r * math.sin(angle) * 0.5
+                
+                vertices.append((X, Y, Z))
+        
+        # 8. مثلث‌بندی بهینه
+        w = int(math.sqrt(len(vertices)))
+        h = len(vertices) // w
+        
         def idx(x, y):
             return y * w + x
-
+        
         faces = []
-        for y in range(h-1):
-            for x in range(w-1):
+        for y in range(h - 1):
+            for x in range(w - 1):
                 tl = idx(x, y)
-                tr = idx(x+1, y)
-                bl = idx(x, y+1)
-                br = idx(x+1, y+1)
-
-                a = np.array(vertices_list[tl])
-                b = np.array(vertices_list[tr])
-                c = np.array(vertices_list[bl])
-                d = np.array(vertices_list[br])
-
-                diag1 = np.linalg.norm(a - d)
-                diag2 = np.linalg.norm(b - c)
+                tr = idx(x + 1, y)
+                bl = idx(x, y + 1)
+                br = idx(x + 1, y + 1)
+                
+                # انتخاب قطر کوتاه‌تر
+                a = vertices[tl]
+                b = vertices[tr]
+                c = vertices[bl]
+                d = vertices[br]
+                
+                diag1 = ((a[0]-d[0])**2 + (a[1]-d[1])**2 + (a[2]-d[2])**2)**0.5
+                diag2 = ((b[0]-c[0])**2 + (b[1]-c[1])**2 + (b[2]-c[2])**2)**0.5
+                
                 if diag1 <= diag2:
-                    tri1 = (tl, bl, tr)
-                    tri2 = (tr, bl, br)
+                    faces.append((tl, bl, tr))
+                    faces.append((tr, bl, br))
                 else:
-                    tri1 = (tl, tr, bl)
-                    tri2 = (tr, br, bl)
-
-                # تصحیح جهت نرمال
-                def correct(tri):
-                    u0, v0 = x, y
-                    u1 = x+1 if tri[1] in (tr, br) else x
-                    v1 = y+1 if tri[1] in (bl, br) else y
-                    u2 = x+1 if tri[2] in (tr, br) else x
-                    v2 = y+1 if tri[2] in (bl, br) else y
-                    area_uv = (u1 - u0)*(v2 - v0) - (u2 - u0)*(v1 - v0)
-                    return (tri[0], tri[2], tri[1]) if area_uv < 0 else tri
-
-                faces.append(correct(tri1))
-                faces.append(correct(tri2))
-
+                    faces.append((tl, tr, bl))
+                    faces.append((tr, br, bl))
+        
         # 9. ذخیره فایل OBJ
-        os.makedirs(os.path.dirname(output_obj), exist_ok=True)
-        with open(output_obj, "w", encoding="utf-8") as f:
-            f.write("# 3D Model - No SciPy, Pure NumPy\n")
-            f.write(f"# max_height={max_height}, edge_boost={edge_boost}, max_res={max_res}\n")
-            f.write(f"# vertices={len(vertices_list)}, faces={len(faces)}\n")
-            for v in vertices_list:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write("# 3D Model - Optimized Engine\n")
+            f.write(f"# Quality: {quality}, Vertices: {len(vertices)}, Faces: {len(faces)}\n")
+            for v in vertices:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
             for face in faces:
                 f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
-
-        self.model_path = output_obj
-        print(f"[OK] Model saved: {len(vertices_list)} vertices, {len(faces)} faces -> {output_obj}")
-        return True, output_obj
+        
+        print(f"[OK] Model saved: {len(vertices)} vertices, {len(faces)} faces -> {output_path}")
+        return True, output_path
 
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
         engine = Engine3D()
-        engine.image_to_3d(
+        engine.process(
             sys.argv[1],
             sys.argv[2] if len(sys.argv) > 2 else "output.obj",
-            max_res=300,
-            max_height=0.28,
-            median_kernel=3,
-            bg_threshold=0.85,
-            edge_boost=0.3,
-            gamma=1.2
+            max_res=400,
+            quality="high"
         )
     else:
         print("Usage: python engine_3d.py <image_path> [output.obj]")

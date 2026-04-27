@@ -1,74 +1,66 @@
-// pages/payment.js
+// pages/index.js
 'use client';
-
 import { useState } from 'react';
 
-export default function PaymentPage() {
-  const [status, setStatus] = useState(null);
+export default function Home() {
+  const [modelUrl, setModelUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [error, setError] = useState(null);
 
-  const handlePayment = async () => {
+  const uploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
     setLoading(true);
-    setStatus(null);
-    setErrorMsg('');
+    setError(null);
+    setModelUrl(null);
 
-    // مقادیر تست – در واقعیت، اینها را از login یا state دریافت کنید
-    const chatId = 'test_user_123';
-    const amount = 5000;  // عدد، نه رشته
+    const formData = new FormData();
+    formData.append('imageFile', file);
 
     try {
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ chatId, amount }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'خطا در درخواست پرداخت');
-      }
-
-      setStatus('success');
+      const res = await fetch('/api/uploadImage', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      if (data.success) setModelUrl(data.modelUrl);
+      else setError('Conversion failed');
     } catch (err) {
-      console.error('Client error:', err);
-      setErrorMsg(err.message);
-      setStatus('error');
+      setError(err.message || 'Network error');
     } finally {
       setLoading(false);
     }
   };
 
+  const handlePayment = async () => {
+    try {
+      const walletId = 'WALLET-as6NfAMYM6r5ZKUv';
+      const message = 'پرداخت مدل سه‌بعدی شما تایید شد.';
+      const res = await fetch('/api/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletId, message }),
+      });
+      const data = await res.json();
+      if (data.ok) alert('پرداخت موفقیت‌آمیز بود');
+      else alert('خطا در پرداخت');
+    } catch (err) {
+      alert('خطا در اتصال به سرور');
+    }
+  };
+
   return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <h1>💳 پرداخت</h1>
-      <button
-        onClick={handlePayment}
-        disabled={loading}
-        style={{
-          padding: '12px 24px',
-          fontSize: '18px',
-          backgroundColor: loading ? '#ccc' : '#4CAF50',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: loading ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {loading ? 'در حال اتصال...' : 'پرداخت ۵,۰۰۰ تومان'}
-      </button>
-      {status === 'success' && (
-        <p style={{ color: 'green', marginTop: '20px' }}>
-          ✅ پرداخت موفقیت‌آمیز بود. مدل سه‌بعدی شما آماده است.
-        </p>
-      )}
-      {status === 'error' && (
-        <p style={{ color: 'red', marginTop: '20px' }}>
-          ❌ خطا: {errorMsg || 'لطفاً دوباره تلاش کنید.'}
-        </p>
+      <h1>🦟 تبدیل تصویر به مدل سه‌بعدی</h1>
+      <input type="file" accept="image/*" onChange={uploadImage} disabled={loading} />
+      {loading && <p>در حال پردازش مدل...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {modelUrl && (
+        <>
+          <iframe src={modelUrl.replace('.obj', '.html') || '/preview.html'} style={{ width: '100%', height: '400px', border: 'none' }} />
+          <button style={{ marginTop: 20, padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4 }} onClick={handlePayment}>
+            💳 پرداخت و دریافت مدل نهایی
+          </button>
+        </>
       )}
     </div>
   );

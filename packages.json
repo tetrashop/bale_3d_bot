@@ -1,0 +1,17 @@
+{
+  "name": "bale_3d_bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "formidable": "^3.5.1",
+    "node-fetch": "^3.3.2"
+  }
+}
