@@ -1,3 +1,4 @@
-{"timestamp":"00:00:06.648","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:38.980","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:00:58.745","source":"Server","level":"ERROR","message":"Error in uploadImage: Error: Command failed: python3 \"/data/data/com.termux/files/home/bale_3d_bot/engine_3d.py\" \"/data/data/com.termux/files/home/bale_3d_bot/tmp_uploads/xuooqcqtwe7rmhvkkt1114jb5.jpg\" \"/data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\"\nTraceback (most recent call last):\n  File \"/data/data/com.termux/files/home/bale_3d_bot/engine_3d.py\", line 7, in <module>\n    from scipy.interpolate import griddata\nModuleNotFoundError: No module named 'scipy'\n"}
+{"timestamp":"00:00:06.489","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:19.151","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:36.644","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 120000 vertices, 238050 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}
+{"timestamp":"00:00:45.336","source":"Server","level":"LOG","message":"✅ Simulated payment for wallet: WALLET-as6NfAMYM6r5ZKUv"}
