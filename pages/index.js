@@ -1,4 +1,3 @@
-// pages/index.js
 'use client';
 import { useState } from 'react';
 
@@ -11,7 +10,6 @@ export default function Home() {
   const uploadImage = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setLoading(true);
     setError(null);
     setModelUrl(null);
@@ -27,7 +25,7 @@ export default function Home() {
       if (data.success) setModelUrl(data.modelUrl);
       else setError('Conversion failed');
     } catch (err) {
-      setError(err.message || 'Network error');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -60,27 +58,29 @@ export default function Home() {
       <input type="file" accept="image/*" onChange={uploadImage} disabled={loading} />
       {loading && <p>در حال پردازش مدل...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      
       {modelUrl && !paid && (
-        <div style={{ marginTop: '20px' }}>
-          <iframe 
-            src="/preview.html" 
-            style={{ width: '100%', maxWidth: '600px', height: '400px', border: 'none', borderRadius: '8px' }} 
-            title="3D Preview"
+        <div style={{ marginTop: '1rem' }}>
+          <iframe
+            src="/preview.html"
+            style={{ width: '100%', maxWidth: '600px', height: '400px', border: 'none', borderRadius: '8px' }}
+            title="پیش‌نمایش سه‌بعدی"
           />
-          <button 
-            style={{ marginTop: 20, padding: '12px 24px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }} 
+          <button
             onClick={handlePayment}
+            style={{ marginTop: 20, padding: '12px 24px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
           >
             💳 پرداخت و دریافت مدل نهایی
           </button>
         </div>
       )}
-      
       {paid && modelUrl && (
-        <div style={{ marginTop: '20px' }}>
-          <a href={modelUrl} download style={{ padding: '12px 24px', backgroundColor: '#2196F3', color: 'white', textDecoration: 'none', borderRadius: 4 }}>
-            📥 دانلود مدل سه‌بعدی
+        <div style={{ marginTop: '1rem' }}>
+          <a
+            href={modelUrl}
+            download
+            style={{ padding: '12px 24px', backgroundColor: '#2196F3', color: 'white', textDecoration: 'none', borderRadius: 4 }}
+          >
+            📥 دانلود مدل سه‌بعدی (OBJ)
           </a>
         </div>
       )}

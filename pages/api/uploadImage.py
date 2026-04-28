@@ -1,4 +1,3 @@
-// pages/api/uploadImage.js
 import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
@@ -7,14 +6,10 @@ import { promisify } from 'util';
 
 const execPromise = promisify(exec);
 
-export const config = {
-  api: { bodyParser: false },
-};
+export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const tmpDir = path.join(process.cwd(), 'tmp_uploads');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
@@ -29,9 +24,7 @@ export default async function handler(req, res) {
   try {
     const [fields, files] = await form.parse(req);
     const imageFile = files.imageFile?.[0] || files.file?.[0];
-    if (!imageFile) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+    if (!imageFile) return res.status(400).json({ error: 'No file uploaded' });
 
     const tempPath = imageFile.filepath;
     const outputModelPath = path.join(process.cwd(), 'public/models/3d_object.obj');
@@ -49,10 +42,10 @@ export default async function handler(req, res) {
       fs.unlinkSync(tempPath);
       return res.status(200).json({ success: true, modelUrl: '/models/3d_object.obj' });
     } else {
-      throw new Error('مدل ساخته نشد');
+      throw new Error('Model not created');
     }
   } catch (error) {
-    console.error('Error in uploadImage:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error(error);
+    return res.status(500).json({ error: error.message });
   }
 }
