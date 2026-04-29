@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>پیش‌نمایش مدل سه‌بعدی</title>
+    <style>body{margin:0;overflow:hidden;font-family:Tahoma;}#info{position:absolute;top:20px;left:20px;background:rgba(0,0,0,0.6);color:white;padding:8px 15px;border-radius:8px;z-index:100;}</style>
+</head>
+<body>
+    <div id="info">🦟 مدل سه‌بعدی – کلیک و بکشید برای چرخش | اسکرول برای زوم</div>
+    <script type="importmap">
+        {"imports":{"three":"https://unpkg.com/three@0.128.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.128.0/examples/jsm/"}}
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+        camera.position.set(1.2, 0.9, 1.5);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableZoom = true;
+        controls.zoomSpeed = 1.2;
+
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xffcc88, 1.2);
+        mainLight.position.set(1, 2, 1.5);
+        scene.add(mainLight);
+
+        const loader = new OBJLoader();
+        loader.load('/models/3d_object.obj', (obj) => {
+            obj.traverse(child => {
+                if (child.isMesh) {
+                    child.material = new THREE.MeshStandardMaterial({
+                        color: 0xbd8a5a,
+                        roughness: 0.4,
+                        metalness: 0.1,
+                        emissive: 0x221100,
+                        wireframe: false   // ← حالت جامد (شبکه‌بندی طبیعی)
+                    });
+                }
+            });
+            scene.add(obj);
+            const box = new THREE.Box3().setFromObject(obj);
+            const center = box.getCenter(new THREE.Vector3());
+            controls.target.copy(center);
+            controls.update();
+        }, undefined, (error) => console.error('Error loading model:', error));
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
