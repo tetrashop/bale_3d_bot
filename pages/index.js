@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 export default function Home() {
+  const router = useRouter();
   const [modelUrl, setModelUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -9,17 +11,16 @@ export default function Home() {
   const [chatId, setChatId] = useState('');
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const chatIdFromUrl = urlParams.get('chatId');
-    if (chatIdFromUrl) {
-      setChatId(chatIdFromUrl);
-      localStorage.setItem('bale_chat_id', chatIdFromUrl);
+    // دریافت chatId از پارامتر URL
+    const { chatId } = router.query;
+    if (chatId) {
+      setChatId(chatId);
+      localStorage.setItem('bale_chat_id', chatId);
     } else {
-      const storedChatId = localStorage.getItem('bale_chat_id');
-      if (storedChatId) setChatId(storedChatId);
-      else setChatId('');
+      const stored = localStorage.getItem('bale_chat_id');
+      if (stored) setChatId(stored);
     }
-  }, []);
+  }, [router.query]);
 
   const uploadImage = async (e) => {
     const file = e.target.files[0];
@@ -50,7 +51,8 @@ export default function Home() {
       alert('شناسه کاربر یافت نشد. لطفاً از طریق ربات بله اقدام کنید.');
       return;
     }
-    const amount = 5000;
+    const amount = 5000; // تومان
+
     try {
       const res = await fetch('/api/payment', {
         method: 'POST',

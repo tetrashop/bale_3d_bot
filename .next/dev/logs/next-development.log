@@ -1,3 +1,1 @@
-{"timestamp":"00:00:06.430","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:57.398","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:01:16.283","source":"Server","level":"LOG","message":"Python stdout: \"[SUCCESS] Model saved: 67500 vertices, 133952 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}
+{"timestamp":"00:00:06.182","source":"Server","level":"LOG","message":""}

@@ -1,12 +1,10 @@
-// pages/api/payment.js
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { chatId, amount, description } = req.body;
+  const { chatId, amount } = req.body;
 
-  // اعتبارسنجی ورودی
   if (!chatId || typeof chatId !== 'string' || chatId.trim() === '') {
     return res.status(400).json({ error: 'chatId نامعتبر است' });
   }
@@ -25,11 +23,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'تنظیمات پرداخت کامل نیست' });
   }
 
-  // ساخت فاکتور
   const invoicePayload = {
     chat_id: chatId,
     title: 'تبدیل تصویر به مدل سه‌بعدی',
-    description: description || 'دریافت فایل OBJ پس از پرداخت',
+    description: 'دریافت فایل OBJ پس از پرداخت',
     payload: `order_${chatId}_${Date.now()}`,
     provider_token: providerToken,
     currency: 'IRR',
@@ -45,7 +42,6 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
     if (response.ok && data.ok) {
       return res.status(200).json({ ok: true, message: 'فاکتور ارسال شد' });
     } else {

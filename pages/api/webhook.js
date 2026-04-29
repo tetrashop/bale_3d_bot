@@ -1,4 +1,3 @@
-// pages/api/webhook.js
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink } from 'fs/promises';
@@ -8,7 +7,6 @@ import os from 'os';
 
 const execPromise = promisify(exec);
 
-// توابع کمکی برای ارسال پیام و فایل به بله
 async function sendMessage(chatId, text) {
   const botToken = process.env.BOT_TOKEN;
   if (!botToken) return;
@@ -49,7 +47,7 @@ export default async function handler(req, res) {
   try {
     const update = req.body;
 
-    // ========== 1. مدیریت pre_checkout_query (تأیید پیش‌پرداخت) ==========
+    // مدیریت pre_checkout_query (تأیید پیش‌پرداخت)
     if (update.pre_checkout_query) {
       const query = update.pre_checkout_query;
       const botToken = process.env.BOT_TOKEN;
@@ -64,7 +62,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // ========== 2. مدیریت پرداخت موفق ==========
+    // مدیریت پرداخت موفق
     if (update.message && update.message.successful_payment) {
       const chatId = update.message.chat.id;
       const payment = update.message.successful_payment;
@@ -80,65 +78,50 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // ========== 3. مدیریت پیام‌های معمولی (عکس، متن) ==========
+    // پیام عکس → تبدیل به OBJ
     const message = update.message;
-    if (!message) {
-      return res.status(200).json({ ok: true, message: 'No message' });
+    if (!message || !message.photo) {
+      return res.status(200).json({ ok: true, message: 'No photo' });
     }
 
-    // اگر متن ساده بود (مثلاً /start)
-    if (message.text) {
-      const text = message.text.trim();
-      if (text === '/start') {
-        await sendMessage(message.chat.id, 'سلام! لطفاً یک تصویر از مگس ارسال کنید تا مدل سه‌بعدی ساخته شود.');
-      }
-      return res.status(200).json({ ok: true });
+    const chatId = message.chat.id;
+    const fileId = message.photo[message.photo.length - 1].file_id;
+    const botToken = process.env.BOT_TOKEN;
+
+    // دریافت فایل از بله
+    const fileInfoRes = await fetch(`https://api.bale.ai/bot${botToken}/getFile?file_id=${fileId}`);
+    const fileInfo = await fileInfoRes.json();
+    if (!fileInfo.ok) throw new Error('Failed to get file info');
+
+    const fileUrl = `https://api.bale.ai/file/bot${botToken}/${fileInfo.result.file_path}`;
+    const imageRes = await fetch(fileUrl);
+    const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+
+    // ذخیره موقت
+    const tempImagePath = path.join(os.tmpdir(), `${chatId}_${Date.now()}.jpg`);
+    await writeFile(tempImagePath, imageBuffer);
+
+    // مسیر خروجی OBJ
+    const outputObjPath = path.join('/tmp', `model_${chatId}_${Date.now()}.obj`);
+    const pythonScript = path.join(process.cwd(), 'engine_3d.py');
+    const command = `python3 "${pythonScript}" "${tempImagePath}" "${outputObjPath}"`;
+
+    console.log('Executing Python script:', command);
+    const { stdout, stderr } = await execPromise(command, { timeout: 60000 });
+    if (stderr) console.error('Python stderr:', stderr);
+    console.log('Python stdout:', stdout);
+
+    // ارسال مدل به کاربر
+    if (fs.existsSync(outputObjPath)) {
+      await sendDocument(chatId, outputObjPath, '✅ مدل سه‌بعدی شما آماده است');
+    } else {
+      await sendMessage(chatId, '❌ خطا در ساخت مدل. لطفاً دوباره تلاش کنید.');
     }
 
-    // اگر عکس داشت
-    if (message.photo) {
-      const chatId = message.chat.id;
-      const fileId = message.photo[message.photo.length - 1].file_id;
-      const botToken = process.env.BOT_TOKEN;
+    // پاکسازی فایل‌های موقت
+    await unlink(tempImagePath).catch(() => {});
+    await unlink(outputObjPath).catch(() => {});
 
-      // 1. دریافت اطلاعات فایل
-      const fileInfoRes = await fetch(`https://api.bale.ai/bot${botToken}/getFile?file_id=${fileId}`);
-      const fileInfo = await fileInfoRes.json();
-      if (!fileInfo.ok) throw new Error('Failed to get file info');
-
-      const fileUrl = `https://api.bale.ai/file/bot${botToken}/${fileInfo.result.file_path}`;
-      const imageRes = await fetch(fileUrl);
-      const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
-
-      // 2. ذخیره موقت
-      const tempImagePath = path.join(os.tmpdir(), `${chatId}_${Date.now()}.jpg`);
-      await writeFile(tempImagePath, imageBuffer);
-
-      // 3. مسیر خروجی OBJ
-      const outputObjPath = path.join('/tmp', `model_${chatId}_${Date.now()}.obj`);
-      const pythonScript = path.join(process.cwd(), 'engine_3d.py');
-      const command = `python3 "${pythonScript}" "${tempImagePath}" "${outputObjPath}"`;
-
-      console.log('Executing Python script:', command);
-      const { stdout, stderr } = await execPromise(command, { timeout: 60000 });
-      if (stderr) console.error('Python stderr:', stderr);
-      console.log('Python stdout:', stdout);
-
-      // 4. ارسال فایل OBJ به کاربر
-      if (fs.existsSync(outputObjPath)) {
-        await sendDocument(chatId, outputObjPath, '✅ مدل سه‌بعدی شما آماده است');
-      } else {
-        await sendMessage(chatId, '❌ خطا در ساخت مدل. لطفاً دوباره تلاش کنید.');
-      }
-
-      // 5. پاکسازی فایل‌های موقت
-      await unlink(tempImagePath).catch(() => {});
-      await unlink(outputObjPath).catch(() => {});
-
-      return res.status(200).json({ ok: true });
-    }
-
-    // در غیر این صورت
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('Webhook error:', error);
