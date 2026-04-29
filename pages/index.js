@@ -1,11 +1,25 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [modelUrl, setModelUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [paid, setPaid] = useState(false);
+  const [chatId, setChatId] = useState('');
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatIdFromUrl = urlParams.get('chatId');
+    if (chatIdFromUrl) {
+      setChatId(chatIdFromUrl);
+      localStorage.setItem('bale_chat_id', chatIdFromUrl);
+    } else {
+      const storedChatId = localStorage.getItem('bale_chat_id');
+      if (storedChatId) setChatId(storedChatId);
+      else setChatId('');
+    }
+  }, []);
 
   const uploadImage = async (e) => {
     const file = e.target.files[0];
@@ -32,20 +46,23 @@ export default function Home() {
   };
 
   const handlePayment = async () => {
+    if (!chatId) {
+      alert('شناسه کاربر یافت نشد. لطفاً از طریق ربات بله اقدام کنید.');
+      return;
+    }
+    const amount = 5000;
     try {
-      const walletId = 'WALLET-as6NfAMYM6r5ZKUv';
-      const message = 'پرداخت مدل سه‌بعدی شما تایید شد.';
       const res = await fetch('/api/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletId, message }),
+        body: JSON.stringify({ chatId, amount })
       });
       const data = await res.json();
       if (data.ok) {
         setPaid(true);
-        alert('پرداخت موفقیت‌آمیز بود');
+        alert('فاکتور پرداخت در ربات بله ارسال شد. لطفاً آن را نهایی کنید.');
       } else {
-        alert('خطا در پرداخت');
+        alert('خطا: ' + (data.error || 'مشخص نیست'));
       }
     } catch (err) {
       alert('خطا در اتصال به سرور');
