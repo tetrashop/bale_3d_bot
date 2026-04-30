@@ -5,50 +5,16 @@ import numpy as np
 from PIL import Image
 
 class Engine3D:
-    # فیلتر میانه دستی (جایگزین scipy)
-    def _median_filter(self, arr, k=3):
-        pad = k // 2
-        padded = np.pad(arr, pad, mode='edge')
-        out = np.zeros_like(arr)
-        for i in range(arr.shape[0]):
-            for j in range(arr.shape[1]):
-                out[i, j] = np.median(padded[i:i+k, j:j+k])
-        return out
-
     def process(self, image_path, output_path="public/models/3d_object.obj", max_res=400):
-        # 1. بارگذاری و لومینانس استاندارد
+        # بارگذاری و تبدیل به شدت روشنایی (میانگین RGB)
         img = Image.open(image_path).convert('RGB')
         img.thumbnail((max_res, max_res), Image.Resampling.LANCZOS)
         width, height = img.size
         rgb = np.array(img, dtype=np.float32) / 255.0
-        intensity = 0.299 * rgb[:,:,0] + 0.587 * rgb[:,:,1] + 0.114 * rgb[:,:,2]
+        intensity = (rgb[:,:,0] + rgb[:,:,1] + rgb[:,:,2]) / 3.0
 
-        # 2. فیلتر میانه (کاهش نویز)
-        intensity = self._median_filter(intensity, 3)
-
-        # 3. حذف خودکار پس‌زمینه (آستانه تطبیقی)
-        mean_val = intensity.mean()
-        std_val = intensity.std()
-        threshold = mean_val + 0.5 * std_val
-        intensity[intensity > threshold] = 0.0
-
-        # 4. تقویت لبه با Sobel (دستی)
-        sobel_x = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])
-        sobel_y = sobel_x.T
-        pad = 1
-        padded = np.pad(intensity, pad, mode='edge')
-        mag = np.zeros_like(intensity)
-        for y in range(1, height+1):
-            for x in range(1, width+1):
-                win = padded[y-1:y+2, x-1:x+2]
-                gx = np.sum(win * sobel_x)
-                gy = np.sum(win * sobel_y)
-                mag[y-1, x-1] = np.hypot(gx, gy)
-        mag = mag / mag.max() if mag.max() > 0 else mag
-        intensity = np.clip(intensity + mag * 0.3, 0, 1)
-
-        # 5. ساخت رئوس (صفحه تخت با برجستگی)
-        max_height = 0.32
+        # ساخت رئوس (صفحه تخت با برجستگی)
+        max_height = 0.28
         vertices = []
         for y in range(height):
             for x in range(width):
@@ -60,16 +26,15 @@ class Engine3D:
         if len(vertices) < 3:
             return False, None
 
-        # 6. مرکزی‌سازی خودکار
+        # مرکزی‌سازی خودکار
         vertices = np.array(vertices)
         center = vertices.mean(axis=0)
         vertices = vertices - center
         vertices = vertices.tolist()
 
-        # 7. مثلث‌بندی (کوتاه‌ترین قطر)
-        n = len(vertices)
-        w = int(math.sqrt(n))
-        h = n // w
+        # مثلث‌بندی شبکه منظم با کوتاه‌ترین قطر
+        w = int(math.sqrt(len(vertices)))
+        h = len(vertices) // w
         if w < 2 or h < 2:
             return False, None
 
@@ -93,7 +58,7 @@ class Engine3D:
                     faces.append((tl, tr, bl))
                     faces.append((tr, br, bl))
 
-        # 8. تصحیح نرمال (بیرونی)
+        # تصحیح نرمال‌ها (بیرونی)
         def correct_normal(tri):
             a = vertices[tri[0]]
             b = vertices[tri[1]]
@@ -104,10 +69,10 @@ class Engine3D:
             return tri
         faces = [correct_normal(f) for f in faces]
 
-        # 9. ذخیره OBJ
+        # ذخیره فایل OBJ
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write("# 3D Model - Final Traditional Method\n")
+            f.write("# 3D Model - Relief Sculpture (Final)\n")
             f.write(f"# Vertices: {len(vertices)}, Faces: {len(faces)}\n")
             for v in vertices:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")

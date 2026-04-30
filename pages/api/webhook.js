@@ -7,14 +7,16 @@ import os from 'os';
 
 const execPromise = promisify(exec);
 
-async function sendMessage(chatId, text) {
+async function sendMessage(chatId, text, replyMarkup = null) {
   const botToken = process.env.BOT_TOKEN;
   if (!botToken) return;
+  const body = { chat_id: chatId, text };
+  if (replyMarkup) body.reply_markup = JSON.stringify(replyMarkup);
   try {
     await fetch(`https://api.bale.ai/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text })
+      body: JSON.stringify(body)
     });
   } catch (err) {
     console.error('sendMessage error:', err);
@@ -78,9 +80,30 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // پیام عکس → تبدیل به OBJ
     const message = update.message;
-    if (!message || !message.photo) {
+    if (!message) {
+      return res.status(200).json({ ok: true, message: 'No message' });
+    }
+
+    // ========== مدیریت پیام‌های متنی (دستور /start) ==========
+    if (message.text) {
+      const text = message.text.trim();
+      const chatId = message.chat.id;
+
+      if (text === '/start') {
+        const keyboard = {
+          inline_keyboard: [[{
+            text: "✨ ساخت مدل سه‌بعدی",
+            web_app: { url: `https://bale-3d-bot.vercel.app/?chatId=${chatId}` }
+          }]]
+        };
+        await sendMessage(chatId, "به ربات تبدیل 2D به 3D خوش آمدید. برای شروع، روی دکمه زیر کلیک کنید:", keyboard);
+        return res.status(200).json({ ok: true });
+      }
+    }
+
+    // ========== مدیریت پیام‌های حاوی عکس ==========
+    if (!message.photo) {
       return res.status(200).json({ ok: true, message: 'No photo' });
     }
 
