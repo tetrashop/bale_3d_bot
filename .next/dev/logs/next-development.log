@@ -1,4 +1,4 @@
-{"timestamp":"00:00:07.105","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:07.193","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload"}
-{"timestamp":"00:00:10.473","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:00:40.088","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 120000 verts, 238050 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}
+{"timestamp":"00:00:05.723","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:16.346","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:36.582","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 120000 verts, 238050 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}
+{"timestamp":"00:50:52.806","source":"Server","level":"LOG","message":"Python stdout: \"[OK] Model saved: 120000 verts, 238050 faces -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n\""}

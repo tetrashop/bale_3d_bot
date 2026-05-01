@@ -5,36 +5,54 @@ import numpy as np
 from PIL import Image
 
 class Engine3D:
-    def process(self, image_path, output_path="public/models/3d_object.obj", max_res=400):
-        # بارگذاری و تبدیل به شدت روشنایی (میانگین RGB)
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def _simulate_depth_map(image):
+        """
+        جایگزین ساده برای depth map (بر اساس روشنایی)
+        """
+        gray = image.convert('L')
+        depth = np.array(gray, dtype=np.float32) / 255.0
+        # معکوس: نقاط تیره (مگس) عمق کمتر (نزدیک‌تر) → شعاع بیشتر
+        depth = 1.0 - depth
+        return depth
+
+    def process(self, image_path, output_path="public/models/3d_object.obj", max_res=300):
         img = Image.open(image_path).convert('RGB')
         img.thumbnail((max_res, max_res), Image.Resampling.LANCZOS)
         width, height = img.size
-        rgb = np.array(img, dtype=np.float32) / 255.0
-        intensity = (rgb[:,:,0] + rgb[:,:,1] + rgb[:,:,2]) / 3.0
 
-        # ساخت رئوس (صفحه تخت با برجستگی)
-        max_height = 0.28
+        # depth map شبیه‌سازی شده (بدون AI)
+        depth_map = self._simulate_depth_map(img)
+
+        # تبدیل به مختصات کروی
+        base_radius = 1.0
+        max_relief = 0.5
         vertices = []
         for y in range(height):
             for x in range(width):
-                Z = intensity[y, x] * max_height
-                X = (x / width) * 2 - 1
-                Y = (y / height) * 2 - 1
+                theta = (y / height) * math.pi          # 0..π
+                phi   = (x / width) * 2 * math.pi - math.pi  # -π..π
+                r = base_radius + depth_map[y, x] * max_relief
+                X = r * math.sin(theta) * math.cos(phi)
+                Y = r * math.cos(theta)
+                Z = r * math.sin(theta) * math.sin(phi)
                 vertices.append((X, Y, Z))
 
         if len(vertices) < 3:
             return False, None
 
-        # مرکزی‌سازی خودکار
         vertices = np.array(vertices)
         center = vertices.mean(axis=0)
         vertices = vertices - center
         vertices = vertices.tolist()
 
-        # مثلث‌بندی شبکه منظم با کوتاه‌ترین قطر
-        w = int(math.sqrt(len(vertices)))
-        h = len(vertices) // w
+        # مثلث‌بندی شبکه منظم
+        n = len(vertices)
+        w = int(math.sqrt(n))
+        h = n // w
         if w < 2 or h < 2:
             return False, None
 
@@ -58,7 +76,6 @@ class Engine3D:
                     faces.append((tl, tr, bl))
                     faces.append((tr, br, bl))
 
-        # تصحیح نرمال‌ها (بیرونی)
         def correct_normal(tri):
             a = vertices[tri[0]]
             b = vertices[tri[1]]
@@ -69,10 +86,9 @@ class Engine3D:
             return tri
         faces = [correct_normal(f) for f in faces]
 
-        # ذخیره فایل OBJ
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write("# 3D Model - Relief Sculpture (Final)\n")
+            f.write("# 3D Model - Spherical (no AI)\n")
             f.write(f"# Vertices: {len(vertices)}, Faces: {len(faces)}\n")
             for v in vertices:
                 f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
