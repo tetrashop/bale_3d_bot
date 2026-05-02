@@ -1,3 +1,5 @@
-{"timestamp":"00:00:07.403","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:17.115","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:00:46.612","source":"Server","level":"LOG","message":"Python stdout: \"✅ مدل ساخته شد: 898 رأس, 29 وجه -> /data/data/com.termux/files/home/bale_3d_bot/public/models/3d_object.obj\\n🐝 اما یادت باشد: این مگس است، نه نمونه قهوه نادر.\\n\""}
+{"timestamp":"00:00:06.135","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:52.285","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:05:17.816","source":"Server","level":"ERROR","message":"Python error: \"\""}
+{"timestamp":"00:06:12.079","source":"Server","level":"ERROR","message":"Python error: \"\""}
+{"timestamp":"00:10:28.599","source":"Server","level":"ERROR","message":"Python error: \"\""}

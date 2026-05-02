@@ -1,12 +1,6 @@
-module.exports = {
-  webpack: (config, { dev }) => {
-    if (dev) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-        ignored: ['/data/**', '/data/data/**', '/**'],
-      };
-    }
-    return config;
-  },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  allowedDevOrigins: ['21.246.178.87', 'localhost', '127.0.0.1'],
 };
+
+module.exports = nextConfig;

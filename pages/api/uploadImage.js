@@ -1,51 +1,54 @@
-import formidable from 'formidable';
-import fs from 'fs';
+import multer from 'multer';
+import { spawn } from 'child_process';
+import { unlink } from 'fs/promises';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import os from 'os';
 
-const execPromise = promisify(exec);
-
+const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 10 * 1024 * 1024 } });
 export const config = { api: { bodyParser: false } };
+
+function runMiddleware(req, res, fn) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result) => {
+      if (result instanceof Error) return reject(result);
+      return resolve(result);
+    });
+  });
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  const tmpDir = path.join(process.cwd(), 'tmp_uploads');
-  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-
-  const form = formidable({
-    multiples: false,
-    uploadDir: tmpDir,
-    keepExtensions: true,
-    maxFileSize: 10 * 1024 * 1024,
-  });
-
   try {
-    const [fields, files] = await form.parse(req);
-    const imageFile = files.imageFile?.[0] || files.file?.[0];
-    if (!imageFile) return res.status(400).json({ error: 'No file uploaded' });
-
-    const tempPath = imageFile.filepath;
-    const outputModelPath = path.join(process.cwd(), 'public/models/3d_object.obj');
-    const modelDir = path.dirname(outputModelPath);
-    if (!fs.existsSync(modelDir)) fs.mkdirSync(modelDir, { recursive: true });
-
+    await runMiddleware(req, res, upload.any());
+    if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No file uploaded' });
+    const file = req.files[0];
+    const tempPath = file.path;
+    const outputPath = path.join(process.cwd(), 'public/models/3d_object.obj');
     const pythonScript = path.join(process.cwd(), 'engine_3d.py');
-    const command = `python3 "${pythonScript}" "${tempPath}" "${outputModelPath}"`;
 
-    const { stdout, stderr } = await execPromise(command, { timeout: 60000 });
-    if (stderr) console.error('Python stderr:', stderr);
-    console.log('Python stdout:', stdout);
+    const pythonProcess = spawn('python3', [pythonScript, tempPath, outputPath], {
+      timeout: 0,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
 
-    if (fs.existsSync(outputModelPath) && fs.statSync(outputModelPath).size > 0) {
-      fs.unlinkSync(tempPath);  // پاک کردن فایل موقت
-      return res.status(200).json({ success: true, modelUrl: '/models/3d_object.obj' });
-    } else {
-      throw new Error('مدل ساخته نشد');
+    let stderr = '';
+    pythonProcess.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    const exitCode = await new Promise((resolve) => {
+      pythonProcess.on('close', resolve);
+      setTimeout(() => pythonProcess.kill('SIGKILL'), 240000);
+    });
+
+    await unlink(tempPath).catch(() => {});
+
+    if (exitCode !== 0) {
+      console.error('Python error:', stderr);
+      return res.status(500).json({ error: 'پردازش تصویر با خطا مواجه شد', details: stderr });
     }
+
+    res.status(200).json({ success: true, modelUrl: '/models/3d_object.obj' });
   } catch (error) {
-    console.error('Error in uploadImage:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message });
   }
 }
