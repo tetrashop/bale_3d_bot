@@ -1,14 +1,8 @@
 {
   "functions": {
-    "api/*.js": {
-      "maxDuration": 60,
+    "pages/api/process.js": {
+      "maxDuration": 10,
       "memory": 1024
     }
-  },
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ]
+  }
 }

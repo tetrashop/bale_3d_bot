@@ -1,2 +1,12 @@
-.vercel
+node_modules/
+.next/
+.env
+.env.local
 .env*.local
+__pycache__/
+*.pyc
+tmp/
+public/temp_models/
+public/models/*.obj
+!public/models/.gitkeep
+.DS_Store
