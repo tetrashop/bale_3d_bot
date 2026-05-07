@@ -10,3 +10,4 @@ public/temp_models/
 public/models/*.obj
 !public/models/.gitkeep
 .DS_Store
+termux_science_setup
