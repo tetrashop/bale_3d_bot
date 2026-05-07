@@ -9,12 +9,18 @@ export default function Home() {
   const [downloadUrl, setDownloadUrl] = useState(null);
   const [error, setError] = useState('');
   const [originalName, setOriginalName] = useState('');
-  const [zScale, setZScale] = useState(0.5);
+  const [quality, setQuality] = useState('normal');
   const [token, setToken] = useState(null);
-  const [paymentPending, setPaymentPending] = useState(false);
   const [objContent, setObjContent] = useState(null);
   const [filename, setFilename] = useState('');
+  const [chatId, setChatId] = useState('');
   const mountRef = useRef(null);
+
+  const qualitySettings = {
+    normal: { maxRes: 300, zScale: 0.5, price: 50000, label: 'معمولی', priceLabel: '۵۰,۰۰۰ ریال' },
+    high: { maxRes: 600, zScale: 1.0, price: 150000, label: 'بالا', priceLabel: '۱۵۰,۰۰۰ ریال' },
+    pro: { maxRes: 1200, zScale: 1.5, price: 300000, label: 'حرفه‌ای', priceLabel: '۳۰۰,۰۰۰ ریال' }
+  };
 
   useEffect(() => {
     if (objContent && mountRef.current) {
@@ -63,7 +69,6 @@ export default function Home() {
       setToken(null);
       setDownloadUrl(null);
       setObjContent(null);
-      setFilename('');
     } else {
       setFile(null);
       setPreviewImg(null);
@@ -75,9 +80,6 @@ export default function Home() {
     if (!file) return;
     setLoading(true);
     setError('');
-    setToken(null);
-    setDownloadUrl(null);
-    setObjContent(null);
 
     const reader = new FileReader();
     reader.onload = async (ev) => {
@@ -85,14 +87,18 @@ export default function Home() {
         const res = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: ev.target.result, filename: originalName, zScale }),
+          body: JSON.stringify({
+            image: ev.target.result,
+            filename: originalName,
+            maxRes: qualitySettings[quality].maxRes,
+            zScale: qualitySettings[quality].zScale
+          }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'خطا در تبدیل');
+        if (!res.ok) throw new Error(data.error);
         setToken(data.token);
         setObjContent(data.objContent);
-        setFilename(data.filename || `${originalName}.obj`);
-        alert('مدل ساخته شد. اکنون می‌توانید پرداخت کنید.');
+        setFilename(data.filename);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -107,21 +113,33 @@ export default function Home() {
       setError('لطفاً ابتدا تصویر را تبدیل کنید');
       return;
     }
-    setPaymentPending(true);
+    if (!chatId) {
+      setError('شناسه چت بله (Chat ID) را وارد کنید. از ربات @userinfobot در بله دریافت کنید.');
+      return;
+    }
+    setLoading(true);
     try {
       const res = await fetch('/api/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, quality, chatId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      // شبیه‌سازی پرداخت: بلافاصله فایل را دانلود کن (بدون درخواست اضافه)
-      setDownloadUrl(URL.createObjectURL(new Blob([objContent], { type: 'text/plain' })));
-      setPaymentPending(false);
+      alert('فاکتور در ربات بله برای شما ارسال شد. پس از پرداخت، صفحه به‌طور خودکار دانلود می‌کند.');
+      const interval = setInterval(async () => {
+        const checkRes = await fetch(`/api/download?token=${token}`, { method: 'HEAD' });
+        if (checkRes.status === 200) {
+          clearInterval(interval);
+          const blobRes = await fetch(`/api/download?token=${token}`);
+          const blob = await blobRes.blob();
+          setDownloadUrl(URL.createObjectURL(blob));
+          setLoading(false);
+        }
+      }, 3000);
     } catch (err) {
       setError(err.message);
-      setPaymentPending(false);
+      setLoading(false);
     }
   };
 
@@ -132,29 +150,47 @@ export default function Home() {
         <div style={{ marginBottom: '1rem' }}>
           <input type="file" accept="image/*" onChange={handleFileChange} />
         </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <input 
+            type="text" 
+            placeholder="شناسه چت بله (Chat ID)" 
+            value={chatId} 
+            onChange={(e) => setChatId(e.target.value)} 
+            style={{ width: '260px', padding: '8px', direction: 'ltr' }}
+          />
+          <small style={{ display: 'block', color: '#666' }}>
+            🔑 راهنما: ربات <strong>@userinfobot</strong> را در بله باز کنید. با Start عددی مثل <code>123456789</code> دریافت کنید. همان را اینجا وارد کنید.
+          </small>
+        </div>
         {previewImg && (
           <div style={{ marginBottom: '1rem' }}>
             <img src={previewImg} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px' }} />
           </div>
         )}
-        {objContent && (
-          <div ref={mountRef} style={{ marginBottom: '1rem', width: '400px', height: '400px', backgroundColor: '#111' }}></div>
-        )}
         <div style={{ marginBottom: '1rem' }}>
-          <label>ضریب ارتفاع: </label>
-          <input type="range" min="0.1" max="1.5" step="0.01" value={zScale} onChange={(e) => setZScale(e.target.value)} />
-          <span>{zScale}</span>
+          <strong>کیفیت خروجی:</strong>
+          <div>
+            {Object.keys(qualitySettings).map(key => (
+              <label key={key} style={{ marginRight: '1rem' }}>
+                <input type="radio" name="quality" value={key} checked={quality === key} onChange={() => setQuality(key)} />
+                {qualitySettings[key].label} ({qualitySettings[key].priceLabel})
+              </label>
+            ))}
+          </div>
         </div>
         <button type="button" onClick={handleConvertAndPreview} disabled={!file || loading} style={{ marginRight: '10px' }}>
           {loading ? 'در حال ساخت مدل...' : '🔄 تبدیل و پیش‌نمایش'}
         </button>
-        <button type="button" onClick={handlePayment} disabled={!token || paymentPending}>
-          {paymentPending ? 'منتظر تأیید پرداخت...' : '💳 پرداخت و دانلود'}
+        <button type="button" onClick={handlePayment} disabled={!token || loading}>
+          {loading ? 'منتظر پرداخت...' : '💳 پرداخت واقعی و دانلود'}
         </button>
       </form>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {downloadUrl && (
         <p>✅ <a href={downloadUrl} download={filename || `${originalName}.obj`}>دانلود فایل {filename || originalName}.obj</a></p>
+      )}
+      {objContent && !downloadUrl && (
+        <div ref={mountRef} style={{ marginTop: '1rem', width: '400px', height: '400px', backgroundColor: '#111' }}></div>
       )}
     </div>
   );
