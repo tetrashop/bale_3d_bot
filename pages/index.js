@@ -114,7 +114,7 @@ export default function Home() {
       return;
     }
     if (!chatId) {
-      setError('شناسه چت بله (Chat ID) را وارد کنید. از ربات @userinfobot در بله دریافت کنید.');
+      setError('شناسه چت بله (Chat ID) را وارد کنید. از ربات @userinfo_idbot در بله دریافت کنید.');
       return;
     }
     setLoading(true);
@@ -159,7 +159,7 @@ export default function Home() {
             style={{ width: '260px', padding: '8px', direction: 'ltr' }}
           />
           <small style={{ display: 'block', color: '#666' }}>
-            🔑 راهنما: ربات <strong>@userinfobot</strong> را در بله باز کنید. با Start عددی مثل <code>123456789</code> دریافت کنید. همان را اینجا وارد کنید.
+            🔑 راهنما: ربات <strong>@userinfo_idbot</strong> را در بله باز کنید. با Start عددی مثل <code>123456789</code> دریافت کنید. همان را اینجا وارد کنید.
           </small>
         </div>
         {previewImg && (
