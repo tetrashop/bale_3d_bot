@@ -21,6 +21,7 @@ class Engine3d:
         y_coords = np.linspace(-1, 1, height)
         xv, yv = np.meshgrid(x_coords, y_coords)
         vertices = np.stack([xv, yv, z_vals], axis=-1).reshape(-1, 3)
+        # ساخت faces
         faces = []
         for i in range(height - 1):
             for j in range(width - 1):

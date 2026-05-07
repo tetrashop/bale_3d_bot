@@ -80,7 +80,6 @@ export default function Home() {
     if (!file) return;
     setLoading(true);
     setError('');
-
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
@@ -126,7 +125,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      alert('فاکتور در ربات بله برای شما ارسال شد. پس از پرداخت، صفحه به‌طور خودکار دانلود می‌کند.');
+      alert('فاکتور در ربات بله برای شما ارسال شد. (در حالت شبیه‌سازی بلافاصله دانلود می‌شود)');
       const interval = setInterval(async () => {
         const checkRes = await fetch(`/api/download?token=${token}`, { method: 'HEAD' });
         if (checkRes.status === 200) {
@@ -136,7 +135,7 @@ export default function Home() {
           setDownloadUrl(URL.createObjectURL(blob));
           setLoading(false);
         }
-      }, 3000);
+      }, 2000);
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -144,18 +143,18 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
+    <div dir="rtl" style={{ padding: '2rem', fontFamily: 'Vazir, sans-serif' }}>
       <h1>📷 تبدیل تصویر به نقش برجسته (پرداختی)</h1>
       <form onSubmit={(e) => e.preventDefault()}>
         <div style={{ marginBottom: '1rem' }}>
           <input type="file" accept="image/*" onChange={handleFileChange} />
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <input 
-            type="text" 
-            placeholder="شناسه چت بله (Chat ID)" 
-            value={chatId} 
-            onChange={(e) => setChatId(e.target.value)} 
+          <input
+            type="text"
+            placeholder="شناسه چت بله (Chat ID)"
+            value={chatId}
+            onChange={(e) => setChatId(e.target.value)}
             style={{ width: '260px', padding: '8px', direction: 'ltr' }}
           />
           <small style={{ display: 'block', color: '#666' }}>
@@ -164,7 +163,7 @@ export default function Home() {
         </div>
         {previewImg && (
           <div style={{ marginBottom: '1rem' }}>
-            <img src={previewImg} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px' }} />
+            <img src={previewImg} alt="پیش‌نمایش" style={{ maxWidth: '100%', maxHeight: '200px' }} />
           </div>
         )}
         <div style={{ marginBottom: '1rem' }}>
@@ -178,11 +177,11 @@ export default function Home() {
             ))}
           </div>
         </div>
-        <button type="button" onClick={handleConvertAndPreview} disabled={!file || loading} style={{ marginRight: '10px' }}>
+        <button type="button" onClick={handleConvertAndPreview} disabled={!file || loading} style={{ marginLeft: '10px' }}>
           {loading ? 'در حال ساخت مدل...' : '🔄 تبدیل و پیش‌نمایش'}
         </button>
         <button type="button" onClick={handlePayment} disabled={!token || loading}>
-          {loading ? 'منتظر پرداخت...' : '💳 پرداخت واقعی و دانلود'}
+          {loading ? 'منتظر پرداخت...' : '💳 پرداخت و دانلود'}
         </button>
       </form>
       {error && <p style={{ color: 'red' }}>{error}</p>}
