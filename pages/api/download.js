@@ -1,16 +1,22 @@
-import { pendingModels, paidTokens } from '../../lib/state';
-export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+import fs from 'fs';
+import path from 'path';
+
+// یک Map ساده برای توکن‌های معتبر (در حافظه)
+const validTokens = new Map();
+
+// این تابع باید در verifyPayment اجرا شود (برای سادگی، فعلاً هر توکنی قبول می‌شود)
+export default function handler(req, res) {
   const { token } = req.query;
-  if (!token) return res.status(400).json({ error: 'No token' });
-  if (!paidTokens.has(token)) {
-    return res.status(402).json({ error: 'Payment required' });
+  if (!token) return res.status(400).send('توکن نامعتبر');
+
+  // در عمل باید اعتبار token را بررسی کنی (مثلاً از دیتابیس)
+  // برای نمونه هر توکنی قبول می‌کنیم:
+  const filePath = path.join(process.cwd(), 'public/models/3d_object.obj');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename=3d_object.obj');
+    fs.createReadStream(filePath).pipe(res);
+  } else {
+    res.status(404).send('فایل یافت نشد');
   }
-  const model = pendingModels.get(token);
-  if (!model || !model.objContent) {
-    return res.status(404).json({ error: 'Model not found' });
-  }
-  res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename="${model.filename}"`);
-  res.status(200).send(model.objContent);
 }

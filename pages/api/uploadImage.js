@@ -4,6 +4,7 @@ import { unlink } from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
+// تنظیمات multer برای ذخیره فایل در مسیر موقت
 const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 10 * 1024 * 1024 } });
 export const config = { api: { bodyParser: false } };
 
@@ -20,12 +21,15 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
     await runMiddleware(req, res, upload.any());
-    if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
     const file = req.files[0];
     const tempPath = file.path;
     const outputPath = path.join(process.cwd(), 'public/models/3d_object.obj');
     const pythonScript = path.join(process.cwd(), 'engine_3d.py');
 
+    // استفاده از spawn برای اجرای پایدارتر فرآیند
     const pythonProcess = spawn('python3', [pythonScript, tempPath, outputPath], {
       timeout: 0,
       stdio: ['ignore', 'pipe', 'pipe']
@@ -36,7 +40,7 @@ export default async function handler(req, res) {
 
     const exitCode = await new Promise((resolve) => {
       pythonProcess.on('close', resolve);
-      setTimeout(() => pythonProcess.kill('SIGKILL'), 240000);
+      setTimeout(() => pythonProcess.kill('SIGKILL'), 180000);
     });
 
     await unlink(tempPath).catch(() => {});
