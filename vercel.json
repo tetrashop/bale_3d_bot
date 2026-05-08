@@ -1,8 +1,11 @@
 {
-  "functions": {
-    "pages/api/process.js": {
-      "maxDuration": 10,
-      "memory": 1024
-    }
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "WALLET_ID": "WALLET-as6NfAMYM6r5ZKUv",
+    "NEXTAUTH_URL": "https://bale-3d-bot.vercel.app",
+    "PROCESSOR_API_URL": "https://railway-3d-service.up.railway.app"
   }
 }
