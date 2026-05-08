@@ -5,7 +5,6 @@
   "installCommand": "npm install",
   "env": {
     "WALLET_ID": "WALLET-as6NfAMYM6r5ZKUv",
-    "NEXTAUTH_URL": "https://bale-3d-bot.vercel.app",
-    "PROCESSOR_API_URL": "https://railway-3d-service.up.railway.app"
+    "PROCESSOR_API_URL": "https://railway-service.up.railway.app"
   }
 }
