@@ -1,10 +1,12 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "env": {
-    "WALLET_ID": "WALLET-as6NfAMYM6r5ZKUv",
-    "PROCESSOR_API_URL": "https://railway-service.up.railway.app"
-  }
+  "functions": {
+    "pages/api/process.py": {
+      "runtime": "@vercel/python@3.9",
+      "maxDuration": 10
+    }
+  },
+  "builds": [
+    { "src": "pages/api/process.py", "use": "@vercel/python" },
+    { "src": "package.json", "use": "@vercel/next" }
+  ]
 }

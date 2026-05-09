@@ -1,10 +1,11 @@
 import multer from 'multer';
-import { spawn } from 'child_process';
 import { unlink } from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { createReadStream } from 'fs';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
 
-// تنظیمات multer برای ذخیره فایل در مسیر موقت
 const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 10 * 1024 * 1024 } });
 export const config = { api: { bodyParser: false } };
 
@@ -26,31 +27,28 @@ export default async function handler(req, res) {
     }
     const file = req.files[0];
     const tempPath = file.path;
-    const outputPath = path.join(process.cwd(), 'public/models/3d_object.obj');
-    const pythonScript = path.join(process.cwd(), 'engine_3d.py');
 
-    // استفاده از spawn برای اجرای پایدارتر فرآیند
-    const pythonProcess = spawn('python3', [pythonScript, tempPath, outputPath], {
-      timeout: 0,
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
+    const form = new FormData();
+    form.append('file', createReadStream(tempPath), 'image.jpg');
 
-    let stderr = '';
-    pythonProcess.stderr.on('data', (data) => { stderr += data.toString(); });
-
-    const exitCode = await new Promise((resolve) => {
-      pythonProcess.on('close', resolve);
-      setTimeout(() => pythonProcess.kill('SIGKILL'), 180000);
+    // آدرس Flask API - از IP شبکه استفاده شده تا مرورگر گوشی هم بتواند وصل شود
+    const response = await fetch('http://192.168.1.101:5000/process', {
+      method: 'POST',
+      body: form,
+      headers: form.getHeaders()
     });
 
     await unlink(tempPath).catch(() => {});
 
-    if (exitCode !== 0) {
-      console.error('Python error:', stderr);
-      return res.status(500).json({ error: 'پردازش تصویر با خطا مواجه شد', details: stderr });
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: errorText });
     }
 
-    res.status(200).json({ success: true, modelUrl: '/models/3d_object.obj' });
+    const blob = await response.buffer();
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename=model.obj');
+    res.send(blob);
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: error.message });
