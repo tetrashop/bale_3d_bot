@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
-  // اجازه می‌دهد توابع Python در مسیر /api/process کار کنند
-  experimental: {
-    serverComponentsExternalPackages: ['numpy', 'PIL'],
-  },
 };
+
+module.exports = nextConfig;

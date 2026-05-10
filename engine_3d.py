@@ -47,15 +47,11 @@ class Engine3D:
     def triangulate_grid(self, vertices, w, h):
         if w < 2 or h < 2:
             return []
-        def idx(x, y):
-            return y * w + x
+        def idx(x, y): return y * w + x
         faces = []
         for y in range(h-1):
             for x in range(w-1):
-                tl = idx(x, y)
-                tr = idx(x+1, y)
-                bl = idx(x, y+1)
-                br = idx(x+1, y+1)
+                tl, tr, bl, br = idx(x,y), idx(x+1,y), idx(x,y+1), idx(x+1,y+1)
                 a,b,c,d = vertices[tl], vertices[tr], vertices[bl], vertices[br]
                 diag1 = (a[0]-d[0])**2 + (a[1]-d[1])**2 + (a[2]-d[2])**2
                 diag2 = (b[0]-c[0])**2 + (b[1]-c[1])**2 + (b[2]-c[2])**2
