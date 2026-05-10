@@ -1,30 +1,40 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+# pages/api/process.py
+import os
+import tempfile
+import sys
+sys.path.append(os.getcwd())
+from engine_3d import Engine3D
+from flask import Flask, request, send_file
+from werkzeug.utils import secure_filename
 
-  const processorUrl = process.env.PROCESSOR_API_URL;
-  if (!processorUrl) {
-    return res.status(500).json({ error: 'PROCESSOR_API_URL not configured' });
-  }
+app = Flask(__name__)
+engine = Engine3D(max_height=0.28, max_faces=4000)
 
-  try {
-    const response = await fetch(`${processorUrl}/process`, {
-      method: 'POST',
-      body: req.body,
-    });
+@app.route('/', methods=['POST'])
+def process():
+    if 'file' not in request.files:
+        return {'error': 'No file'}, 400
+    file = request.files['file']
+    if file.filename == '':
+        return {'error': 'Empty filename'}, 400
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(response.status).json({ error: errorText });
-    }
+    fd, temp_input = tempfile.mkstemp(suffix='.jpg')
+    os.close(fd)
+    file.save(temp_input)
 
-    const blob = await response.arrayBuffer();
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', 'attachment; filename=model.obj');
-    res.send(Buffer.from(blob));
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-}
+    fd_out, temp_output = tempfile.mkstemp(suffix='.obj')
+    os.close(fd_out)
+
+    try:
+        success, _ = engine.process(temp_input, temp_output)
+        if not success:
+            return {'error': 'Processing failed'}, 500
+        return send_file(temp_output, as_attachment=True, download_name='model.obj')
+    except Exception as e:
+        return {'error': str(e)}, 500
+    finally:
+        for f in [temp_input, temp_output]:
+            if os.path.exists(f):
+                os.unlink(f)
+
+handler = app
