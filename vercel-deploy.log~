@@ -1,0 +1,55 @@
+Retrieving project…
+Deploying ramin-edjlal-s-projects/bale-3d-bot
+Uploading [--------------------] (0.0B/68B)
+Uploading [====================] (68.0B/68B)
+Inspect: https://vercel.com/ramin-edjlal-s-projects/bale-3d-bot/GXJPG9JCWf9cxjvQBYY51J39EsAH [6s]
+Production: https://bale-3d-gotbzqqne-ramin-edjlal-s-projects.vercel.app [6s]
+https://bale-3d-gotbzqqne-ramin-edjlal-s-projects.vercel.appBuilding...
+Building: Running build in Washington, D.C., USA (East) – iad1
+Building: Build machine configuration: 2 cores, 8 GB
+Building: Build machine configuration: 2 cores, 8 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 415 deployment files...
+Building: Restored build cache from previous deployment (4mSv9ADFgMFaDmKqrowYhwbB92Zh)
+Building: Running "vercel build"
+Building: Vercel CLI 54.4.1
+Building: WARNING! Due to `builds` existing in your configuration file, the Build and Development Settings defined in your Project Settings will not apply. Learn More: https://vercel.link/unused-build-settings
+Building: Installing dependencies...
+Building: npm warn ERESOLVE overriding peer dependency
+Building: npm warn While resolving: bale-3d-bot@1.0.0
+Building: npm warn Found: react@18.3.1
+Building: npm warn node_modules/react
+Building: npm warn   react@"^19.0.0" from the root project
+Building: npm warn   3 more (next, react-dom, styled-jsx)
+Building: npm warn
+Building: npm warn Could not resolve dependency:
+Building: npm warn peer react@"^18.3.1" from react-dom@18.3.1
+Building: npm warn node_modules/react-dom
+Building: npm warn   react-dom@"^19.0.0" from the root project
+Building: npm warn   1 more (next)
+Building: npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+Building: added 32 packages, removed 11 packages, and changed 9 packages in 8s
+Building: 17 packages are looking for funding
+Building: run `npm fund` for details
+Building: Detected Next.js version: 16.2.5
+Building: Running "npm run build"
+Building: > bale-3d-bot@1.0.0 build
+Building: > next build --webpack
+Building: Applying modifyConfig from Vercel
+Building: ▲ Next.js 16.2.5 (webpack)
+Building: Running TypeScript ...
+Building: Finished TypeScript in 57ms ...
+Building: Creating an optimized production build ...
+Building: Failed to compile.
+Building: ./pages/api/uploadImage.js
+Building: Module not found: Can't resolve 'multer'
+Building: https://nextjs.org/docs/messages/module-not-found
+Building: > Build failed because of webpack errors
+Building: Error: Command "npm run build" exited with 1
+Error: Command "npm run build" exited with 1
+Error: Failed to get package info: Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}

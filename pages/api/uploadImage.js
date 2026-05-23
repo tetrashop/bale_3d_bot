@@ -1,56 +1,58 @@
-import multer from 'multer';
-import { unlink } from 'fs/promises';
+// pages/api/uploadImage.js
+import formidable from 'formidable';
+import fs from 'fs';
 import path from 'path';
-import os from 'os';
-import { createReadStream } from 'fs';
-import FormData from 'form-data';
-import fetch from 'node-fetch';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-const upload = multer({ dest: os.tmpdir(), limits: { fileSize: 10 * 1024 * 1024 } });
-export const config = { api: { bodyParser: false } };
+const execPromise = promisify(exec);
 
-function runMiddleware(req, res, fn) {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) return reject(result);
-      return resolve(result);
-    });
-  });
-}
+export const config = {
+  api: { bodyParser: false }, // لازم برای formidable
+};
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const tmpDir = path.join(process.cwd(), 'tmp_uploads');
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+  const form = formidable({
+    multiples: false,
+    uploadDir: tmpDir,
+    keepExtensions: true,
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+  });
+
   try {
-    await runMiddleware(req, res, upload.any());
-    if (!req.files || req.files.length === 0) {
+    const [fields, files] = await form.parse(req);
+    const imageFile = files.imageFile?.[0] || files.file?.[0];
+    if (!imageFile) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    const file = req.files[0];
-    const tempPath = file.path;
 
-    const form = new FormData();
-    form.append('file', createReadStream(tempPath), 'image.jpg');
+    const tempPath = imageFile.filepath;
+    const outputModelPath = path.join(process.cwd(), 'public/models/3d_object.obj');
+    const modelDir = path.dirname(outputModelPath);
+    if (!fs.existsSync(modelDir)) fs.mkdirSync(modelDir, { recursive: true });
 
-    // آدرس Flask API - از IP شبکه استفاده شده تا مرورگر گوشی هم بتواند وصل شود
-    const response = await fetch('http://192.168.1.101:5000/process', {
-      method: 'POST',
-      body: form,
-      headers: form.getHeaders()
-    });
+    const pythonScript = path.join(process.cwd(), 'engine_3d.py');
+    const command = `python3 "${pythonScript}" "${tempPath}" "${outputModelPath}"`;
 
-    await unlink(tempPath).catch(() => {});
+    const { stdout, stderr } = await execPromise(command, { timeout: 60000 });
+    if (stderr) console.error('Python stderr:', stderr);
+    console.log('Python stdout:', stdout);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(response.status).json({ error: errorText });
+    if (fs.existsSync(outputModelPath) && fs.statSync(outputModelPath).size > 0) {
+      fs.unlinkSync(tempPath); // پاک کردن فایل موقت
+      return res.status(200).json({ success: true, modelUrl: '/models/3d_object.obj' });
+    } else {
+      throw new Error('مدل ساخته نشد');
     }
-
-    const blob = await response.buffer();
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', 'attachment; filename=model.obj');
-    res.send(blob);
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error in uploadImage:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }

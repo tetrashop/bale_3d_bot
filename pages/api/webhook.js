@@ -1,8 +1,7 @@
+export const maxDuration = 60; // افزایش زمان اجرا به 60 ثانیه
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
 import path from 'path';
-import fetch from 'node-fetch';
-
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
@@ -30,7 +29,7 @@ export default async function handler(req, res) {
     if (!processorUrl) return res.status(500).json({ error: 'Processor API missing' });
 
     try {
-      const response = await fetch(`${processorUrl}/process`, { method: 'POST', body: formData });
+      const response = await fetch(url, options);
       if (!response.ok) throw new Error('Processing failed');
 
       const blob = await response.arrayBuffer();
