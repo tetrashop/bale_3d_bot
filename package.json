@@ -1,11 +1,8 @@
 {
-  "name": "bale-3d-bot-vercel",
+  "name": "bale-3d-bot",
   "version": "1.0.0",
-  "description": "A Telegram-like bot for Bale Messenger, handling 2D to 3D conversion requests.",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "description": "Bale 3D bot for Vercel",
+  "main": "api/webhook.js",
   "dependencies": {
     "axios": "^1.6.0"
   }
