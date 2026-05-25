@@ -1,41 +1,8 @@
 <!DOCTYPE html>
-<html lang="fa">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ربات تبدیل 2D به 3D</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; direction: rtl; }
-        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-        button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 10px; border: none; border-radius: 4px; cursor: pointer; }
-        #status { margin-top: 20px; }
-    </style>
-</head>
+<html>
+<head><title>ربات تبدیل 2D به 3D</title></head>
 <body>
-    <div class="container">
-        <h1>🤖 ربات تبدیل 2D به 3D</h1>
-        <p>لطفا ربات را در پیام‌رسان بله باز کرده و تصویر خود را ارسال کنید.</p>
-        <p>شناسه ربات: <strong>tetrashop_bale_3d_bot</strong></p>
-        <button onclick="window.location.href='https://bale.ai/'">باز کردن بله</button>
-        <button onclick="checkHealth()">بررسی وضعیت ربات</button>
-        <div id="status"></div>
-    </div>
-    <script>
-        async function checkHealth() {
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerHTML = 'در حال بررسی وضعیت...';
-            try {
-                const response = await fetch('/api/health');
-                if (response.ok) {
-                    const data = await response.json();
-                    statusDiv.innerHTML = `✅ ربات فعال است: ${data.message || ''}`;
-                } else {
-                    statusDiv.innerHTML = `❌ خطا در ارتباط با ربات. کد خطا: ${response.status}`;
-                }
-            } catch (error) {
-                statusDiv.innerHTML = `❌ خطا در ارتباط با ربات: ${error.message}`;
-            }
-        }
-    </script>
+<h1>ربات فعال است</h1>
+<p>برای استفاده، ربات را در پیام‌رسان بله جستجو کنید.</p>
 </body>
 </html>

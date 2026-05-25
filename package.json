@@ -1,8 +1,6 @@
 {
   "name": "bale-3d-bot",
   "version": "1.0.0",
-  "description": "Bale 3D bot for Vercel",
-  "main": "api/webhook.js",
   "dependencies": {
     "axios": "^1.6.0"
   }
