@@ -6,17 +6,7 @@
     }
   },
   "routes": [
-    {
-      "src": "/api/webhook",
-      "dest": "/app.py"
-    },
-    {
-      "src": "/api/convert",
-      "dest": "/app.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/api/(.*)", "dest": "/app.py" },
+    { "src": "/(.*)", "dest": "/app.py" }
   ]
 }

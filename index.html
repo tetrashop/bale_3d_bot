@@ -5,49 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تبدیل 2D به 3D با ولت بله</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Vazir', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: Tahoma, sans-serif; }
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; padding: 20px; }
-        .card { background: rgba(255,255,255,0.95); border-radius: 30px; padding: 30px; max-width: 600px; width: 100%; box-shadow: 0 25px 45px rgba(0,0,0,0.2); text-align: center; transition: 0.3s; }
+        .card { background: white; border-radius: 30px; padding: 30px; max-width: 600px; width: 100%; box-shadow: 0 25px 45px rgba(0,0,0,0.2); text-align: center; }
         h1 { color: #333; margin-bottom: 10px; }
-        p { color: #666; margin-bottom: 30px; }
+        p { color: #666; margin-bottom: 20px; }
         .upload-area { border: 2px dashed #764ba2; border-radius: 20px; padding: 30px; cursor: pointer; transition: 0.3s; background: #f9f9ff; margin-bottom: 20px; }
-        .upload-area:hover { background: #f0eaff; border-color: #667eea; }
-        #preview { max-width: 100%; max-height: 200px; margin: 15px 0; display: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        button { background: linear-gradient(95deg, #667eea, #764ba2); border: none; color: white; padding: 12px 25px; border-radius: 40px; font-size: 16px; cursor: pointer; margin: 10px; transition: 0.2s; font-weight: bold; }
+        .upload-area:hover { background: #f0eaff; }
+        #preview { max-width: 100%; max-height: 200px; margin: 15px 0; display: none; border-radius: 15px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 25px; font-size: 16px; text-align: center; direction: ltr; }
+        button { background: linear-gradient(95deg, #667eea, #764ba2); border: none; color: white; padding: 12px 25px; border-radius: 40px; font-size: 16px; cursor: pointer; margin: 10px; font-weight: bold; width: 80%; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .payment { background: #27ae60; margin-top: 10px; }
-        .result { margin-top: 20px; background: #e9ecef; border-radius: 20px; padding: 15px; display: none; }
-        a.download { display: inline-block; background: #3498db; color: white; padding: 10px 20px; border-radius: 40px; text-decoration: none; margin-top: 10px; }
+        .status { margin-top: 15px; font-size: 14px; color: #555; }
         .loading { display: none; margin: 20px; }
-        .status { font-size: 14px; color: #555; margin-top: 10px; }
-        input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>🖼️ تبدیل 2D به 3D</h1>
-    <p>عکس خود را آپلود کنید، با ولت بله پرداخت کنید و مدل سه‌بعدی بگیرید</p>
+    <p>عکس خود را آپلود کنید، سپس شناسه کاربری بله خود را وارد کرده و پرداخت را انجام دهید.</p>
     <div class="upload-area" id="uploadArea">
-        <span>📸 کلیک یا بکشید و رها کنید</span>
-        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
-        <img id="preview" alt="پیش‌نمایش">
+        📸 کلیک کنید یا عکس را بکشید و رها کنید
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <img id="preview">
     </div>
-    <button id="payBtn" class="payment" disabled>💳 پرداخت با ولت بله (۱۰,۰۰۰ تومان)</button>
-    <div class="loading" id="loading">⏳ در حال تبدیل... لطفاً صبر کنید</div>
-    <div class="result" id="result">
-        <h3>✅ مدل سه‌بعدی ساخته شد!</h3>
-        <a href="#" id="downloadLink" class="download" download>📥 دانلود فایل OBJ</a>
-    </div>
+    <input type="text" id="chatId" placeholder="شناسه کاربری بله (مثال: 431413093)" dir="ltr">
+    <button id="payBtn" disabled>💳 پرداخت با ولت بله (۱۰,۰۰۰ ریال)</button>
+    <div class="loading" id="loading">⏳ در حال ارسال درخواست به ربات...</div>
     <div class="status" id="status"></div>
+    <p style="font-size:12px; margin-top:20px;">پس از پرداخت، مدل سه‌بعدی در همین ربات برای شما ارسال می‌شود.</p>
 </div>
 <script>
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
+    const chatIdInput = document.getElementById('chatId');
     const payBtn = document.getElementById('payBtn');
     const loadingDiv = document.getElementById('loading');
-    const resultDiv = document.getElementById('result');
-    const downloadLink = document.getElementById('downloadLink');
     const statusDiv = document.getElementById('status');
     let selectedFile = null;
 
@@ -58,7 +52,7 @@
         e.preventDefault();
         uploadArea.style.background = '#f9f9ff';
         const file = e.dataTransfer.files[0];
-        if (file && (file.type.startsWith('image/'))) handleFile(file);
+        if (file && file.type.startsWith('image/')) handleFile(file);
         else statusDiv.innerText = '❌ فقط فایل تصویری مجاز است';
     });
     fileInput.addEventListener('change', (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); });
@@ -72,46 +66,39 @@
         };
         reader.readAsDataURL(file);
         payBtn.disabled = false;
-        statusDiv.innerText = '✅ عکس انتخاب شد. برای پرداخت کلیک کنید.';
-        resultDiv.style.display = 'none';
+        statusDiv.innerText = '✅ عکس انتخاب شد. لطفاً شناسه کاربری خود را وارد کنید.';
     }
 
     payBtn.addEventListener('click', async () => {
         if (!selectedFile) return;
+        const chatId = chatIdInput.value.trim();
+        if (!chatId) {
+            statusDiv.innerText = '❌ لطفاً شناسه کاربری بله خود را وارد کنید.';
+            return;
+        }
         payBtn.disabled = true;
         loadingDiv.style.display = 'block';
-        statusDiv.innerText = 'در حال اتصال به درگاه ولت بله...';
-
-        // شبیه‌سازی پرداخت با ولت بله (در واقع باید API واقعی وصل شود)
-        // به دلیل محدودیت، یک شبیه‌سازی ساده انجام می‌دهیم
-        setTimeout(async () => {
-            // ارسال تصویر به سرور برای تبدیل
-            const formData = new FormData();
-            formData.append('image', selectedFile);
-            statusDiv.innerText = 'در حال تبدیل 2D به 3D...';
-            try {
-                const response = await fetch('/api/convert', {
-                    method: 'POST',
-                    body: formData
-                });
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
-                    downloadLink.href = url;
-                    downloadLink.download = 'model.obj';
-                    resultDiv.style.display = 'block';
-                    statusDiv.innerText = '🎉 تبدیل با موفقیت انجام شد! فایل خود را دانلود کنید.';
-                } else {
-                    const err = await response.text();
-                    statusDiv.innerText = '❌ خطا در تبدیل: ' + err;
-                }
-            } catch (err) {
-                statusDiv.innerText = '❌ خطای شبکه: ' + err.message;
-            } finally {
-                loadingDiv.style.display = 'none';
-                payBtn.disabled = false;
+        statusDiv.innerText = 'در حال ارسال به سرور...';
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        formData.append('chat_id', chatId);
+        try {
+            const response = await fetch('/api/request_payment', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (response.ok && result.status === 'success') {
+                statusDiv.innerHTML = '✅ فاکتور به ربات شما ارسال شد. لطفاً اکنون در پیام‌رسان بله، روی دکمه پرداخت کلیک کنید و هزینه را پرداخت نمایید.<br>پس از پرداخت، مدل سه‌بعدی برای شما ارسال خواهد شد.';
+            } else {
+                statusDiv.innerText = '❌ خطا: ' + (result.error || 'مشخص نیست');
             }
-        }, 1500); // شبیه‌سازی تأخیر پرداخت
+        } catch (err) {
+            statusDiv.innerText = '❌ خطای شبکه: ' + err.message;
+        } finally {
+            loadingDiv.style.display = 'none';
+            payBtn.disabled = false;
+        }
     });
 </script>
 </body>
