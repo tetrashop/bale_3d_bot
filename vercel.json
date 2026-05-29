@@ -1,13 +1,22 @@
 {
+  "version": 2,
   "functions": {
-    "api/index.py": {
+    "app.py": {
       "runtime": "python3.9"
     }
   },
   "routes": [
     {
       "src": "/api/webhook",
-      "dest": "/api/index.py"
+      "dest": "/app.py"
+    },
+    {
+      "src": "/api/convert",
+      "dest": "/app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
