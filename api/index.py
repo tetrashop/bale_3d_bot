@@ -7,6 +7,7 @@ from PIL import Image
 from dotenv import load_dotenv
 
 load_dotenv()
+
 app = Flask(__name__)
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -19,95 +20,41 @@ pending_payments = {}
 def index():
     return '''<!DOCTYPE html>
 <html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تبدیل 2D به 3D با ولت بله</title>
-    <style>
-        *{box-sizing:border-box;font-family:Tahoma,sans-serif}
-        body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;margin:0;padding:20px}
-        .card{background:white;border-radius:30px;padding:30px;max-width:600px;width:100%;box-shadow:0 25px 45px rgba(0,0,0,0.2);text-align:center}
-        h1{color:#333}
-        .upload-area{border:2px dashed #764ba2;border-radius:20px;padding:30px;cursor:pointer;background:#f9f9ff;margin-bottom:20px}
-        .upload-area:hover{background:#f0eaff}
-        #preview{max-width:100%;max-height:200px;display:none;margin:15px 0}
-        input{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:25px;text-align:center}
-        button{background:linear-gradient(95deg,#667eea,#764ba2);border:none;color:white;padding:12px 25px;border-radius:40px;cursor:pointer;width:80%;font-weight:bold}
-        button:disabled{opacity:0.6}
-        .status{margin-top:15px;font-size:14px;color:#555}
-        .loading{display:none;margin:20px}
-    </style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تبدیل 2D به 3D با ولت بله</title>
+<style>
+*{box-sizing:border-box;font-family:Tahoma,sans-serif}
+body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;margin:0;padding:20px}
+.card{background:white;border-radius:30px;padding:30px;max-width:600px;width:100%;box-shadow:0 25px 45px rgba(0,0,0,0.2);text-align:center}
+h1{color:#333}
+.upload-area{border:2px dashed #764ba2;border-radius:20px;padding:30px;cursor:pointer;background:#f9f9ff;margin-bottom:20px}
+.upload-area:hover{background:#f0eaff}
+#preview{max-width:100%;max-height:200px;display:none;margin:15px 0}
+input{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:25px;text-align:center}
+button{background:linear-gradient(95deg,#667eea,#764ba2);border:none;color:white;padding:12px 25px;border-radius:40px;cursor:pointer;width:80%;font-weight:bold}
+button:disabled{opacity:0.6}
+.status{margin-top:15px;font-size:14px;color:#555}
+.loading{display:none;margin:20px}
+</style>
 </head>
 <body>
-<div class="card">
-    <h1>🖼️ تبدیل 2D به 3D</h1>
-    <p>عکس خود را آپلود کنید و شناسه کاربری بله را وارد کنید.</p>
-    <div class="upload-area" id="uploadArea">
-        📸 کلیک یا بکشید
-        <input type="file" id="fileInput" accept="image/*" style="display:none">
-        <img id="preview">
-    </div>
-    <input type="text" id="chatId" placeholder="شناسه کاربری بله (مثال: 431413093)" dir="ltr">
-    <button id="payBtn" disabled>💳 پرداخت با ولت بله (۱۰,۰۰۰ ریال)</button>
-    <div class="loading" id="loading">⏳ در حال ارسال...</div>
-    <div class="status" id="status"></div>
-</div>
+<div class="card"><h1>🖼️ تبدیل 2D به 3D</h1><p>عکس خود را آپلود کنید و شناسه کاربری بله را وارد کنید.</p>
+<div class="upload-area" id="uploadArea">📸 کلیک یا بکشید<input type="file" id="fileInput" accept="image/*" style="display:none"><img id="preview"></div>
+<input type="text" id="chatId" placeholder="شناسه کاربری بله (مثال: 431413093)" dir="ltr">
+<button id="payBtn" disabled>💳 پرداخت با ولت بله (۱۰,۰۰۰ ریال)</button>
+<div class="loading" id="loading">⏳ در حال ارسال...</div><div class="status" id="status"></div></div>
 <script>
-    const uploadArea=document.getElementById('uploadArea');
-    const fileInput=document.getElementById('fileInput');
-    const preview=document.getElementById('preview');
-    const chatIdInput=document.getElementById('chatId');
-    const payBtn=document.getElementById('payBtn');
-    const loadingDiv=document.getElementById('loading');
-    const statusDiv=document.getElementById('status');
-    let selectedFile=null;
-    uploadArea.onclick=()=>fileInput.click();
-    uploadArea.ondragover=e=>{e.preventDefault();uploadArea.style.background='#e0d6ff';};
-    uploadArea.ondragleave=e=>{uploadArea.style.background='#f9f9ff';};
-    uploadArea.ondrop=e=>{
-        e.preventDefault();
-        uploadArea.style.background='#f9f9ff';
-        const file=e.dataTransfer.files[0];
-        if(file&&file.type.startsWith('image/')) handleFile(file);
-        else statusDiv.innerText='❌ فقط تصویر مجاز است';
-    };
-    fileInput.onchange=e=>{if(e.target.files[0]) handleFile(e.target.files[0]);};
-    function handleFile(file){
-        selectedFile=file;
-        const reader=new FileReader();
-        reader.onload=e=>{preview.src=e.target.result;preview.style.display='block';};
-        reader.readAsDataURL(file);
-        payBtn.disabled=false;
-        statusDiv.innerText='✅ عکس انتخاب شد. شناسه خود را وارد کنید.';
-    }
-    payBtn.onclick=async()=>{
-        if(!selectedFile)return;
-        const chatId=chatIdInput.value.trim();
-        if(!chatId){statusDiv.innerText='❌ شناسه کاربری را وارد کنید';return;}
-        payBtn.disabled=true;
-        loadingDiv.style.display='block';
-        statusDiv.innerText='در حال ارسال...';
-        const formData=new FormData();
-        formData.append('image',selectedFile);
-        formData.append('chat_id',chatId);
-        try{
-            const res=await fetch('/api/request_payment',{method:'POST',body:formData});
-            const data=await res.json();
-            if(res.ok&&data.status==='success'){
-                statusDiv.innerHTML='✅ فاکتور به ربات ارسال شد. لطفاً در بله پرداخت را نهایی کنید.<br>پس از پرداخت، مدل سه‌بعدی ارسال می‌شود.';
-            }else{
-                statusDiv.innerText='❌ خطا: '+(data.error||'مشخص نیست');
-            }
-        }catch(err){
-            statusDiv.innerText='❌ خطای شبکه: '+err.message;
-        }finally{
-            loadingDiv.style.display='none';
-            payBtn.disabled=false;
-        }
-    };
+const up=document.getElementById('uploadArea'),fileInput=document.getElementById('fileInput'),preview=document.getElementById('preview'),chatId=document.getElementById('chatId'),payBtn=document.getElementById('payBtn'),loadingDiv=document.getElementById('loading'),statusDiv=document.getElementById('status');
+let selectedFile=null;
+up.onclick=()=>fileInput.click();
+up.ondragover=e=>{e.preventDefault();up.style.background='#e0d6ff';};
+up.ondragleave=e=>{up.style.background='#f9f9ff';};
+up.ondrop=e=>{e.preventDefault();up.style.background='#f9f9ff';const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')) handleFile(f);else statusDiv.innerText='❌ فقط تصویر مجاز است';};
+fileInput.onchange=e=>{if(e.target.files[0]) handleFile(e.target.files[0]);};
+function handleFile(f){selectedFile=f;const reader=new FileReader();reader.onload=e=>{preview.src=e.target.result;preview.style.display='block';};reader.readAsDataURL(f);payBtn.disabled=false;statusDiv.innerText='✅ عکس انتخاب شد. شناسه خود را وارد کنید.';}
+payBtn.onclick=async()=>{if(!selectedFile)return;const cid=chatId.value.trim();if(!cid){statusDiv.innerText='❌ شناسه کاربری را وارد کنید';return;}payBtn.disabled=true;loadingDiv.style.display='block';statusDiv.innerText='در حال ارسال...';const fd=new FormData();fd.append('image',selectedFile);fd.append('chat_id',cid);try{const res=await fetch('/api/request_payment',{method:'POST',body:fd});const data=await res.json();if(res.ok&&data.status==='success'){statusDiv.innerHTML='✅ فاکتور به ربات ارسال شد. لطفاً در بله پرداخت را نهایی کنید.<br>پس از پرداخت، مدل سه‌بعدی ارسال می‌شود.';}else{statusDiv.innerText='❌ خطا: '+(data.error||'مشخص نیست');}}catch(err){statusDiv.innerText='❌ خطای شبکه: '+err.message;}finally{loadingDiv.style.display='none';payBtn.disabled=false;}};
 </script>
-</body>
-</html>'''
+</body></html>'''
 
 # ---------- توابع کمکی ----------
 def send_invoice(chat_id, payload, amount_rial=10000):
@@ -133,8 +80,7 @@ def convert_image_to_obj(image_bytes):
     img = Image.open(BytesIO(image_bytes)).convert('L')
     img = img.resize((60, 60))
     width, height = img.size
-    pixels = list(img.getdata())  # list of int 0..255
-    # تبدیل به ماتریس دوبعدی
+    pixels = list(img.getdata())
     matrix = [pixels[i*width:(i+1)*width] for i in range(height)]
     obj_lines = ["# 2D to 3D model", "o Model"]
     verts = []
@@ -214,5 +160,5 @@ def request_payment():
         pending_payments.pop(payload, None)
         return jsonify({"error": "خطا در ارسال فاکتور", "details": result}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# برای Vercel، اپلیکیشن Flask را به عنوان `app` صادر می‌کنیم
+app = app

@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "routes": [
-    { "src": "/api/request_payment", "dest": "/app.py", "methods": ["POST"] },
-    { "src": "/api/webhook", "dest": "/app.py", "methods": ["POST"] },
-    { "src": "/(.*)", "dest": "/app.py" }
-  ]
-}
