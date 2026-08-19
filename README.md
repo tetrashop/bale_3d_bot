@@ -142,3 +142,8 @@ MIT License
   <sub>ساخته شده با ❤️ توسط تیم TetraShop</sub>
 </div>
 <!-- Trigger deploy: Mon Aug 17 01:48:18 +0330 2026 -->
+
+## 🌐 Deployment
+
+- **Live URL:** [https://bale_3d_bot.vercel.app](https://bale_3d_bot.vercel.app)
+- **Status:** ❌ Inactive
